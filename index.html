@@ -1,1 +1,57 @@
-12313
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <title>Truth or Dare</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body, html {
+      width: 100%;
+      height: 100%;
+      font-family: "Helvetica Neue", sans-serif;
+    }
+
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+
+    .half {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      cursor: pointer;
+      transition: background 0.3s;
+      color: white;
+    }
+
+    .left {
+      background: #3A8DFF;
+    }
+
+    .right {
+      background: #4CAF50;
+    }
+
+    .divider {
+      width: 2px;
+      background: #fff;
+      opacity: 0.4;
+    }
+
+    .half:hover {
+      filter: brightness(1.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="half left" onclick="location.href='home.html?mode=truth'">真心话</div>
+    <div class="divider"></div>
+    <div class="half right" onclick="location.href='home.html?mode=dare'">大冒险</div>
+  </div>
+</body>
+</html>
