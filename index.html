@@ -2,56 +2,91 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8" />
-  <title>Truth or Dare</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Truth or Dare - 选择题库</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body, html {
-      width: 100%;
+    html, body, #container {
       height: 100%;
-      font-family: "Helvetica Neue", sans-serif;
+      font-family: "Helvetica Neue", Arial, sans-serif;
     }
-
-    .container {
+    #container {
       display: flex;
-      height: 100vh;
+      flex-direction: row;
     }
-
     .half {
       flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 2rem;
       cursor: pointer;
-      transition: background 0.3s;
       color: white;
+      font-size: 2rem;
+      user-select: none;
+      transition: background-color 0.3s;
     }
-
-    .left {
+    .half.left {
       background: #3A8DFF;
     }
-
-    .right {
+    .half.right {
       background: #4CAF50;
     }
-
-    .divider {
-      width: 2px;
-      background: #fff;
-      opacity: 0.4;
-    }
-
     .half:hover {
       filter: brightness(1.1);
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="half left" onclick="location.href='home.html?mode=truth'">真心话</div>
-    <div class="divider"></div>
-    <div class="half right" onclick="location.href='home.html?mode=dare'">大冒险</div>
+  <div id="container">
+    <div class="half left" id="truthArea">真心话</div>
+    <div class="half right" id="dareArea">大冒险</div>
   </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAu6RnEXYMRsJP3Q8EISNyQRPtbGLDYwkk",
+      authDomain: "truth-or-dare-b4b2a.firebaseapp.com",
+      databaseURL: "https://truth-or-dare-b4b2a-default-rtdb.firebaseio.com",
+      projectId: "truth-or-dare-b4b2a",
+      storageBucket: "truth-or-dare-b4b2a.firebasestorage.app",
+      messagingSenderId: "643326186626",
+      appId: "1:643326186626:web:861df5ec9c5ca8e669d09b",
+      measurementId: "G-5TXR8Y8BSR"
+    };
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    async function goToSubmode(mode) {
+      try {
+        // 读取对应 mode 下所有子库名称
+        const snapshot = await db.ref(mode).once('value');
+        const data = snapshot.val();
+        if (data) {
+          const submodes = Object.keys(data);
+          if (submodes.length > 0) {
+            const firstSubmode = submodes[0];
+            // 跳转 home.html，带上mode和第一个子库名
+            window.location.href = `home.html?mode=${encodeURIComponent(mode)}&submode=${encodeURIComponent(firstSubmode)}`;
+            return;
+          }
+        }
+        alert('无可用子库，请稍后再试');
+      } catch (e) {
+        alert('读取数据库失败，请检查网络或稍后再试');
+        console.error(e);
+      }
+    }
+
+    document.getElementById('truthArea').addEventListener('click', () => {
+      goToSubmode('truth');
+    });
+
+    document.getElementById('dareArea').addEventListener('click', () => {
+      goToSubmode('dare');
+    });
+  </script>
 </body>
 </html>
