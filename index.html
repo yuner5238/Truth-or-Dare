@@ -1,92 +1,205 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>Truth or Dare - 选择题库</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>真心话 or 大冒险</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body, #container {
+    html, body {
+      margin: 0;
+      padding: 0;
       height: 100%;
-      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-family: "微软雅黑", sans-serif;
+      overflow: hidden;
+      background: radial-gradient(circle at center, #2b2b2b, #000);
     }
-    #container {
+
+    /* 加载动画遮罩 */
+    #loader {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, #2b2b2b, #000);
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      animation: fadeOut 2s ease forwards;
+      animation-delay: 2.2s;
     }
+
+    .loader-ring {
+      width: 80px;
+      height: 80px;
+      border: 6px solid rgba(255,255,255,0.2);
+      border-top-color: #ff6f91;
+      border-radius: 50%;
+      animation: spin 1.2s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    .loader-text {
+      color: #fff;
+      font-size: 1.2rem;
+      animation: breathe 2s ease-in-out infinite;
+      text-shadow: 0 0 10px rgba(255,255,255,0.3);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes breathe {
+      0%, 100% { opacity: 0.6; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.05); }
+    }
+
+    @keyframes fadeOut {
+      to { opacity: 0; visibility: hidden; }
+    }
+
+    .container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #ff5fa2 50%, #6a11cb 50%);
+      animation: gradientShift 10s ease infinite alternate;
+    }
+
+    @keyframes gradientShift {
+      0% { background: linear-gradient(135deg, #ff5fa2 50%, #6a11cb 50%); }
+      100% { background: linear-gradient(135deg, #ff3d77 50%, #8e2de2 50%); }
+    }
+
     .half {
-      flex: 1;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      clip-path: polygon(0 0, 100% 0, 0 100%);
+      z-index: 1;
+    }
+
+    .truth {
+      background: linear-gradient(to bottom right, #ff5fa2, #ff3d77);
+    }
+
+    .dare {
+      background: linear-gradient(to top left, #6a11cb, #8e2de2);
+      clip-path: polygon(100% 0, 100% 100%, 0 100%);
+    }
+
+    .btn {
+      position: absolute;
+      padding: 1.2rem 2.4rem;
+      font-size: 1.3rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 40px;
+      color: white;
+      text-decoration: none;
+      cursor: pointer;
+      z-index: 2;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+      transition: transform 0.2s ease, box-shadow 0.3s ease;
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      animation: fadeInBtn 2.5s ease forwards;
+      animation-delay: 2.2s;
+    }
+
+    .btn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+
+    .btn-truth {
+      top: 40px;
+      left: 40px;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-dare {
+      bottom: 40px;
+      right: 40px;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-truth::after {
+      content: "💗 说出你的秘密";
+      display: block;
+      font-size: 0.9rem;
+      margin-top: 6px;
+      opacity: 0.8;
+    }
+
+    .btn-dare::after {
+      content: "😈 接受刺激挑战";
+      display: block;
+      font-size: 0.9rem;
+      margin-top: 6px;
+      opacity: 0.8;
+    }
+
+    .or-button {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 3;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle at center, #fff, #ddd);
+      color: #333;
+      font-weight: bold;
+      font-size: 1.3rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
-      color: white;
-      font-size: 2rem;
+      box-shadow: 0 0 30px rgba(255,255,255,0.6), 0 0 10px rgba(0,0,0,0.3);
+      border: 2px solid rgba(255,255,255,0.8);
       user-select: none;
-      transition: background-color 0.3s;
+      animation: float 3s ease-in-out infinite, fadeInBtn 2.5s ease forwards;
+      animation-delay: 2.2s;
+      opacity: 0;
     }
-    .half.left {
-      background: #3A8DFF;
+
+    @keyframes float {
+      0% { transform: translate(-50%, -50%) translateY(0); }
+      50% { transform: translate(-50%, -50%) translateY(-8px); }
+      100% { transform: translate(-50%, -50%) translateY(0); }
     }
-    .half.right {
-      background: #4CAF50;
+
+    @keyframes fadeInBtn {
+      to { opacity: 1; }
     }
-    .half:hover {
-      filter: brightness(1.1);
+
+    @media (max-width: 600px) {
+      .btn {
+        font-size: 1rem;
+        padding: 1rem 1.8rem;
+      }
+      .or-button {
+        width: 70px;
+        height: 70px;
+        font-size: 1rem;
+      }
     }
   </style>
 </head>
 <body>
-  <div id="container">
-    <div class="half left" id="truthArea">真心话</div>
-    <div class="half right" id="dareArea">大冒险</div>
+  <div id="loader">
+    <div class="loader-ring"></div>
+    <div class="loader-text">准备揭开秘密…</div>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAu6RnEXYMRsJP3Q8EISNyQRPtbGLDYwkk",
-      authDomain: "truth-or-dare-b4b2a.firebaseapp.com",
-      databaseURL: "https://truth-or-dare-b4b2a-default-rtdb.firebaseio.com",
-      projectId: "truth-or-dare-b4b2a",
-      storageBucket: "truth-or-dare-b4b2a.firebasestorage.app",
-      messagingSenderId: "643326186626",
-      appId: "1:643326186626:web:861df5ec9c5ca8e669d09b",
-      measurementId: "G-5TXR8Y8BSR"
-    };
+  <div class="container">
+    <div class="half truth"></div>
+    <div class="half dare"></div>
 
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    async function goToSubmode(mode) {
-      try {
-        // 读取对应 mode 下所有子库名称
-        const snapshot = await db.ref(mode).once('value');
-        const data = snapshot.val();
-        if (data) {
-          const submodes = Object.keys(data);
-          if (submodes.length > 0) {
-            const firstSubmode = submodes[0];
-            // 跳转 home.html，带上mode和第一个子库名
-            window.location.href = `home.html?mode=${encodeURIComponent(mode)}&submode=${encodeURIComponent(firstSubmode)}`;
-            return;
-          }
-        }
-        alert('无可用子库，请稍后再试');
-      } catch (e) {
-        alert('读取数据库失败，请检查网络或稍后再试');
-        console.error(e);
-      }
-    }
-
-    document.getElementById('truthArea').addEventListener('click', () => {
-      goToSubmode('truth');
-    });
-
-    document.getElementById('dareArea').addEventListener('click', () => {
-      goToSubmode('dare');
-    });
-  </script>
+    <a href="play.html?mode=truth" class="btn btn-truth">真心话</a>
+    <a href="play.html?mode=dare" class="btn btn-dare">大冒险</a>
+    <div class="or-button">OR</div>
+  </div>
 </body>
 </html>

@@ -349,25 +349,51 @@
   // URL 参数
   function getUrlParams() {
     const params = new URLSearchParams(window.location.search);
-    if (params.has('mode')) mode = params.get('mode');
+    if (params.has('mode')) mode = String(params.get('mode') || '').toLowerCase();
     if (params.has('submode')) initialSubmode = params.get('submode');
+    // 容错：只允许 truth/dare，其他一律回落到 truth
+    if (mode !== 'truth' && mode !== 'dare') mode = 'truth';
   }
   getUrlParams();
 
-  // 应用主题与标题
+  // 模式文案
+  function getModeLabels() {
+    if (mode === 'dare') {
+      return {
+        title: '大冒险',
+        btnStart: '来个挑战吧',
+        hintIdle: '今晚来点刺激的挑战吧…',
+        hintReady: '准备好了，点击“来个挑战吧”开始抽题！',
+        btnMore: '再来一个挑战',
+        btnNewRound: '新一轮挑战'
+      };
+    }
+    return {
+      title: '真心话',
+      btnStart: '说出真心话',
+      hintIdle: '今晚该你揭开一点秘密了…',
+      hintReady: '准备好了，点击“说出真心话”开始抽题！',
+      btnMore: '再来一个真心',
+      btnNewRound: '新一轮真心'
+    };
+  }
+
+  // 应用主题与标题/文案
   function applyThemeAndTitle() {
     const body = document.body;
+    const L = getModeLabels();
     if (mode === 'dare') {
       body.classList.add('theme-dare');
       body.classList.remove('theme-truth');
-      pageTitle.textContent = '大冒险';
-      document.title = '大冒险';
     } else {
       body.classList.add('theme-truth');
       body.classList.remove('theme-dare');
-      pageTitle.textContent = '真心话';
-      document.title = '真心话';
     }
+    pageTitle.textContent = L.title;
+    document.title = L.title;
+    // 初始按钮与提示
+    drawBtn.textContent = L.btnStart;
+    questionDiv.textContent = L.hintIdle;
   }
   applyThemeAndTitle();
 
@@ -404,6 +430,7 @@
 
   // 加载组列表
   async function loadDatabases() {
+    const L = getModeLabels();
     try {
       const snapshot = await db.ref(`/${mode}`).once('value');
       const val = snapshot.val();
@@ -427,6 +454,8 @@
       }
       await loadQuestions();
       drawBtn.disabled = false;
+      // 按模式设置启动按钮文本
+      drawBtn.textContent = L.btnStart;
     } catch (error) {
       console.error(error);
       questionDiv.textContent = '加载数据失败';
@@ -436,6 +465,7 @@
 
   // 加载题目（兼容对象/数组）
   async function loadQuestions() {
+    const L = getModeLabels();
     const dbName = databases[currentDbIndex];
     questionDiv.textContent = '加载中…';
     drawBtn.disabled = true;
@@ -453,9 +483,10 @@
         questionDiv.textContent = `当前数据库 "${dbName}" 为空`;
         drawBtn.disabled = true;
       } else {
-        questionDiv.textContent = '准备好了，点击“抽我”开始抽题！';
+        questionDiv.textContent = L.hintReady;
         resetDeck();
         drawBtn.disabled = false;
+        drawBtn.textContent = L.btnStart;
       }
     } catch (error) {
       console.error(error);
@@ -466,6 +497,7 @@
 
   // 抽题
   async function draw() {
+    const L = getModeLabels();
     if (!deck.length) resetDeck();
     if (!deck.length) return;
     drawBtn.disabled = true;
@@ -480,7 +512,7 @@
     playFade(questionDiv);
     questionDiv.style.opacity = '1';
 
-    drawBtn.textContent = deck.length ? '继续抽我' : '新一轮开始';
+    drawBtn.textContent = deck.length ? L.btnMore : L.btnNewRound;
     drawBtn.classList.remove('animate-spinBlur');
     drawBtn.disabled = false;
   }
