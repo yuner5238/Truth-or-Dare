@@ -1,292 +1,288 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Truth or Dare 抽题</title>
-  <style>
-    /* 重置与基本布局 */
-    body, html {
-      margin: 0; padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background: #f0f0f5;
-      color: #333;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      overflow-x: hidden;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Truth or Dare 抽题</title>
+<style>
+  /* Reset */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: #eee;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    padding: 1rem;
+  }
+  header {
+    width: 100%;
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.6rem;
+    margin-bottom: 2rem;
+    user-select: none;
+  }
+  #container {
+    flex: 1;
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  #question {
+    min-height: 120px;
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 2rem;
+    background: rgba(255 255 255 / 0.1);
+    border-radius: 12px;
+    font-size: 1.4rem;
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    user-select: none;
+    box-shadow: 0 0 10px rgba(255 255 255 / 0.15);
+    transition: opacity 0.5s ease;
+  }
+  button#drawBtn {
+    background: #ff6f61;
+    border: none;
+    border-radius: 30px;
+    color: white;
+    font-weight: 700;
+    font-size: 1.4rem;
+    padding: 0.9rem 3rem;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: 0 6px 15px rgba(255,111,97,0.6);
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+    will-change: transform, filter, color, text-shadow;
+  }
+  button#drawBtn:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  button#drawBtn:hover:not(:disabled) {
+    background: #ff836d;
+    box-shadow: 0 8px 22px rgba(255,131,109,0.8);
+  }
 
-    #container {
-      width: 90vw;
-      max-width: 480px;
-      background: white;
-      padding: 2rem 1.5rem;
-      border-radius: 14px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
-    }
+  /* 隐藏的切换数据库按钮 */
+  #switchDbBtn {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: transparent;
+    border: none;
+    color: rgba(255 255 255 / 0.3);
+    font-size: 1rem;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.3s ease;
+  }
+  #switchDbBtn:hover {
+    color: #fff;
+  }
 
-    #question-display {
-      min-height: 140px;
-      width: 100%;
-      font-size: 1.4rem;
-      color: #444;
-      line-height: 1.5;
-      padding: 1.4rem 1.6rem;
-      margin-bottom: 2rem;
-      text-align: center;
-      border-radius: 14px;
-      background: #fafaff;
-      box-shadow: inset 0 0 12px rgba(0,0,0,0.05);
-      user-select: none;
-      display: flex; justify-content: center; align-items: center;
-      word-break: break-word;
-      transition: filter 0.5s ease, opacity 0.5s ease;
+  /* 动画 */
+  @keyframes spinBlur {
+    0% {
+      filter: blur(0);
+      transform: rotate(0deg);
+      color: #ff6f61;
+      text-shadow: none;
     }
-
-    .blur-out {
-      filter: blur(6px);
-      opacity: 0.3;
+    50% {
+      filter: blur(5px);
+      transform: rotate(720deg);
+      color: #ffd966;
+      text-shadow: 0 0 12px #ffd966, 0 0 20px #ffd966;
     }
-
-    #draw-btn {
-      font-size: 1.3rem;
-      background: #007aff;
-      color: white;
-      border: none;
-      padding: 1rem 2rem;
-      border-radius: 28px;
-      cursor: pointer;
-      box-shadow: 0 6px 15px rgba(0,122,255,0.4);
-      user-select: none;
-      transition: background 0.3s ease;
-      width: 100%;
-      max-width: 300px;
+    100% {
+      filter: blur(0);
+      transform: rotate(1080deg);
+      color: #39d353;
+      text-shadow: 0 0 25px #39d353, 0 0 40px #39d353;
     }
+  }
+  .animate-spinBlur {
+    animation: spinBlur 2.5s ease forwards;
+  }
 
-    #draw-btn:hover:not(:disabled) {
-      background: #005ecb;
-      box-shadow: 0 8px 20px rgba(0,94,203,0.6);
+  @keyframes fadeInOpacity {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
     }
-
-    #draw-btn:disabled {
-      background: #999;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-
-    #switch-db-btn {
-      position: absolute;
-      top: 14px;
-      right: 14px;
-      font-size: 0.9rem;
-      color: #007aff;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      user-select: none;
-      opacity: 0.2;
-      transition: opacity 0.3s ease;
-      padding: 4px 8px;
-      border-radius: 12px;
-    }
-
-    #switch-db-btn:hover {
+    to {
       opacity: 1;
-      background: rgba(0, 122, 255, 0.1);
+      transform: translateY(0);
     }
-
-    #db-list {
-      position: absolute;
-      top: 50px;
-      right: 14px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-      max-height: 240px;
-      overflow-y: auto;
-      width: 160px;
-      display: none;
-      flex-direction: column;
-      padding: 8px 0;
-      z-index: 10;
-    }
-
-    #db-list button {
-      border: none;
-      background: transparent;
-      padding: 10px 16px;
-      text-align: left;
-      cursor: pointer;
-      font-size: 1rem;
-      color: #333;
-      user-select: none;
-      transition: background-color 0.2s ease;
-      width: 100%;
-    }
-
-    #db-list button:hover {
-      background-color: #007aff22;
-      color: #007aff;
-    }
-
-    @media (max-width: 480px) {
-      #container {
-        width: 95vw;
-        padding: 1.5rem 1rem;
-      }
-      #draw-btn {
-        font-size: 1.1rem;
-        max-width: 100%;
-      }
-    }
-  </style>
+  }
+  .fadeIn {
+    animation: fadeInOpacity 0.6s ease forwards;
+  }
+</style>
 </head>
 <body>
-  <div id="container">
-    <button id="switch-db-btn" title="切换题库">切换题库▼</button>
-    <div id="db-list"></div>
-    <div id="question-display">加载中...</div>
-    <button id="draw-btn" disabled>抽我</button>
-  </div>
+<header>Truth or Dare 抽题</header>
+<div id="container">
+  <button id="switchDbBtn" title="切换数据库">数据库</button>
+  <div id="question">加载中…</div>
+  <button id="drawBtn" disabled>抽我</button>
+</div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<!-- Firebase SDK (兼容版，避免import错误) -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
-  <script>
-    // Firebase 配置
-    const firebaseConfig = {
-      apiKey: "AIzaSyAu6RnEXYMRsJP3Q8EISNyQRPtbGLDYwkk",
-      authDomain: "truth-or-dare-b4b2a.firebaseapp.com",
-      databaseURL: "https://truth-or-dare-b4b2a-default-rtdb.firebaseio.com",
-      projectId: "truth-or-dare-b4b2a",
-      storageBucket: "truth-or-dare-b4b2a.firebasestorage.app",
-      messagingSenderId: "643326186626",
-      appId: "1:643326186626:web:861df5ec9c5ca8e669d09b",
-      measurementId: "G-5TXR8Y8BSR"
-    };
-    firebase.initializeApp(firebaseConfig);
+<script>
+  // Firebase 配置
+  const firebaseConfig = {
+    apiKey: "AIzaSyAu6RnEXYMRsJP3Q8EISNyQRPtbGLDYwkk",
+    authDomain: "truth-or-dare-b4b2a.firebaseapp.com",
+    databaseURL: "https://truth-or-dare-b4b2a-default-rtdb.firebaseio.com",
+    projectId: "truth-or-dare-b4b2a",
+    storageBucket: "truth-or-dare-b4b2a.firebasestorage.app",
+    messagingSenderId: "643326186626",
+    appId: "1:643326186626:web:861df5ec9c5ca8e669d09b",
+    measurementId: "G-5TXR8Y8BSR"
+  };
 
-    const db = firebase.database();
+  // 初始化 Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-    const questionDisplay = document.getElementById('question-display');
-    const drawBtn = document.getElementById('draw-btn');
-    const switchDbBtn = document.getElementById('switch-db-btn');
-    const dbListDiv = document.getElementById('db-list');
+  // 页面元素
+  const questionDiv = document.getElementById('question');
+  const drawBtn = document.getElementById('drawBtn');
+  const switchDbBtn = document.getElementById('switchDbBtn');
 
-    let mode = 'truth';  // 从 URL 或默认选择，这里默认 truth
-    let currentDbKey = null;
-    let currentQuestions = [];
-    let allDbs = {};  // { dbKey: [题目数组], ... }
+  // 数据变量
+  let mode = 'truth';      // truth 或 dare，从 URL 参数读取也可
+  let databases = [];      // 当前模式下所有数据库名，比如 ['truth1', 'truth2', ...]
+  let currentDbIndex = 0;  // 当前选中数据库索引
+  let questions = [];      // 当前数据库所有题目
 
-    // 从 URL 参数读取 mode 和 submode (可选)
-    function getUrlParam(name) {
-      const params = new URLSearchParams(window.location.search);
-      return params.get(name);
+  // 从 URL 参数读取 mode 和 submode
+  function getUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('mode')) mode = params.get('mode');
+    if (params.has('submode')) {
+      const submode = params.get('submode');
+      // 设置当前数据库索引
+      currentDbIndex = 0; // 默认0
+      // 以后可以改为查找对应索引
     }
-    const urlMode = getUrlParam('mode');
-    if (urlMode === 'truth' || urlMode === 'dare') {
-      mode = urlMode;
-    }
+  }
+  getUrlParams();
 
-    // 载入所有数据库列表
-    async function loadDatabases() {
-      questionDisplay.textContent = '加载题库...';
-      drawBtn.disabled = true;
-
-      try {
-        const snapshot = await db.ref(mode).get();
-        if (!snapshot.exists()) {
-          questionDisplay.textContent = '题库为空';
-          return;
-        }
-        allDbs = snapshot.val();
-
-        const keys = Object.keys(allDbs);
-        if (keys.length === 0) {
-          questionDisplay.textContent = '题库为空';
-          return;
-        }
-
-        currentDbKey = keys[0];
-        currentQuestions = allDbs[currentDbKey] || [];
-
-        renderDbList(keys);
-        updateCurrentDbDisplay();
-        drawBtn.disabled = false;
-        questionDisplay.textContent = '点击“抽我”开始抽题';
-
-      } catch (e) {
-        questionDisplay.textContent = '加载失败，请稍后重试';
-        console.error('读取数据失败', e);
-      }
-    }
-
-    // 渲染数据库切换列表（隐藏）
-    function renderDbList(dbKeys) {
-      dbListDiv.innerHTML = '';
-      dbKeys.forEach(key => {
-        const btn = document.createElement('button');
-        btn.textContent = key;
-        btn.onclick = () => {
-          currentDbKey = key;
-          currentQuestions = allDbs[key] || [];
-          updateCurrentDbDisplay();
-          questionDisplay.textContent = '切换到题库：' + key + '，点击“抽我”开始抽题';
-          drawBtn.textContent = '抽我';
-          dbListDiv.style.display = 'none';
-          drawBtn.disabled = currentQuestions.length === 0;
-        };
-        dbListDiv.appendChild(btn);
-      });
-    }
-
-    // 切换数据库按钮显示当前选中数据库
-    function updateCurrentDbDisplay() {
-      switchDbBtn.textContent = `切换题库 (${currentDbKey}) ▼`;
-    }
-
-    // 动画效果，模糊淡出淡入切换题目
-    function animateQuestionChange(newQuestion) {
-      questionDisplay.classList.add('blur-out');
-      setTimeout(() => {
-        questionDisplay.textContent = newQuestion;
-        questionDisplay.classList.remove('blur-out');
-      }, 500);
-    }
-
-    // 抽题按钮逻辑
-    function drawQuestion() {
-      if (currentQuestions.length === 0) {
-        questionDisplay.textContent = '无可用题目';
+  // 加载所有数据库列表
+  async function loadDatabases() {
+    try {
+      const snapshot = await db.ref(`/${mode}`).once('value');
+      const val = snapshot.val();
+      if (!val) {
+        questionDiv.textContent = '题库为空';
         drawBtn.disabled = true;
         return;
       }
-      const idx = Math.floor(Math.random() * currentQuestions.length);
-      const question = currentQuestions[idx];
-      animateQuestionChange(question);
-      drawBtn.textContent = '继续抽我';
-    }
-
-    // 绑定事件
-    drawBtn.onclick = drawQuestion;
-    switchDbBtn.onclick = () => {
-      if (dbListDiv.style.display === 'flex') {
-        dbListDiv.style.display = 'none';
-      } else {
-        dbListDiv.style.display = 'flex';
+      databases = Object.keys(val);
+      if (databases.length === 0) {
+        questionDiv.textContent = '题库为空';
+        drawBtn.disabled = true;
+        return;
       }
-    };
+      // 默认加载第一个数据库
+      currentDbIndex = 0;
+      await loadQuestions();
+      updateSwitchDbBtnLabel();
+      drawBtn.disabled = false;
+    } catch (error) {
+      questionDiv.textContent = '加载数据失败';
+      console.error(error);
+      drawBtn.disabled = true;
+    }
+  }
 
-    // 页面初始化
-    loadDatabases();
-  </script>
+  // 加载当前数据库的题目
+  async function loadQuestions() {
+    const dbName = databases[currentDbIndex];
+    questionDiv.textContent = '加载中…';
+    drawBtn.disabled = true;
+    try {
+      const snapshot = await db.ref(`/${mode}/${dbName}`).once('value');
+      const val = snapshot.val();
+      questions = Array.isArray(val) ? val : [];
+      if (!questions.length) {
+        questionDiv.textContent = `当前数据库 "${dbName}" 为空`;
+        drawBtn.disabled = true;
+      } else {
+        questionDiv.textContent = '准备好了，点击“抽我”开始抽题！';
+        drawBtn.disabled = false;
+      }
+    } catch (error) {
+      questionDiv.textContent = '读取数据失败';
+      console.error(error);
+      drawBtn.disabled = true;
+    }
+  }
+
+  // 更新切换数据库按钮文本（隐蔽状态）
+  function updateSwitchDbBtnLabel() {
+    switchDbBtn.textContent = `切换数据库(${databases[currentDbIndex]})`;
+  }
+
+  // 切换数据库逻辑（循环）
+  async function switchDatabase() {
+    currentDbIndex = (currentDbIndex + 1) % databases.length;
+    updateSwitchDbBtnLabel();
+    await loadQuestions();
+  }
+
+  // 抽题动画和逻辑
+  async function draw() {
+    if (!questions.length) return;
+    drawBtn.disabled = true;
+
+    // 动画开始
+    drawBtn.classList.add('animate-spinBlur');
+    questionDiv.style.opacity = '0';
+
+    await new Promise(res => setTimeout(res, 2500));
+
+    // 随机题目
+    const randomIndex = Math.floor(Math.random() * questions.length);
+    const randomQuestion = questions[randomIndex];
+
+    // 显示题目
+    questionDiv.textContent = randomQuestion;
+    questionDiv.classList.add('fadeIn');
+    questionDiv.style.opacity = '1';
+
+    drawBtn.textContent = '继续抽我';
+    drawBtn.classList.remove('animate-spinBlur');
+    drawBtn.disabled = false;
+  }
+
+  // 绑定事件
+  drawBtn.addEventListener('click', draw);
+  switchDbBtn.addEventListener('click', switchDatabase);
+
+  // 页面初始化
+  loadDatabases();
+</script>
 </body>
 </html>
