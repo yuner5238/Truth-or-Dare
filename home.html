@@ -1,335 +1,292 @@
 <!DOCTYPE html>
-<html lang="zh-CN" >
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Truth or Dare 抽题</title>
   <style>
-    body {
-      margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: #f0f0f5; color: #222;
-      display: flex; flex-direction: column; min-height: 100vh; align-items: center; justify-content: center;
-      padding: 1rem;
-    }
-    header {
-      width: 100%; max-width: 480px;
-      display: flex; justify-content: flex-end; padding-bottom: 1rem;
-    }
-    #select-library-btn {
-      background: transparent;
-      border: none;
-      color: #007aff;
-      font-size: 0.85rem;
-      cursor: pointer;
-      user-select: none;
-      opacity: 0.3;
-      transition: opacity 0.3s;
-      outline: none;
-    }
-    #select-library-btn:hover,
-    #select-library-btn:focus {
-      opacity: 1;
-      text-decoration: underline;
+    /* 重置与基本布局 */
+    body, html {
+      margin: 0; padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #f0f0f5;
+      color: #333;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
     }
 
-    main {
-      flex: 1;
-      width: 100%;
+    #container {
+      width: 90vw;
       max-width: 480px;
       background: white;
-      border-radius: 15px;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+      padding: 2rem 1.5rem;
+      border-radius: 14px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 2rem 1.5rem;
-      box-sizing: border-box;
+      position: relative;
     }
 
-    #current-library-title {
-      font-weight: 600;
-      font-size: 1.2rem;
-      margin-bottom: 1rem;
-      color: #333;
-      user-select: none;
-    }
     #question-display {
-      min-height: 120px;
-      font-size: 1.3rem;
+      min-height: 140px;
+      width: 100%;
+      font-size: 1.4rem;
       color: #444;
-      line-height: 1.4;
-      padding: 1rem 1.5rem;
+      line-height: 1.5;
+      padding: 1.4rem 1.6rem;
       margin-bottom: 2rem;
       text-align: center;
-      border-radius: 12px;
-      background: #f7f7fc;
-      box-shadow: inset 0 0 8px rgba(0,0,0,0.05);
+      border-radius: 14px;
+      background: #fafaff;
+      box-shadow: inset 0 0 12px rgba(0,0,0,0.05);
       user-select: none;
       display: flex; justify-content: center; align-items: center;
       word-break: break-word;
-    }
-    #draw-btn {
-      background: #007aff;
-      border: none;
-      color: white;
-      font-size: 1.5rem;
-      font-weight: 600;
-      padding: 1rem 3rem;
-      border-radius: 30px;
-      cursor: pointer;
-      user-select: none;
-      box-shadow: 0 5px 15px rgba(0,122,255,0.5);
-      transition: background-color 0.25s;
-    }
-    #draw-btn:hover {
-      background: #005ecb;
-    }
-    #draw-btn:active {
-      background: #004aad;
-      box-shadow: 0 3px 8px rgba(0,75,173,0.7);
+      transition: filter 0.5s ease, opacity 0.5s ease;
     }
 
-    /* 弹出库选择模态 */
-    #library-modal {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.3);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      padding: 1rem;
-      box-sizing: border-box;
+    .blur-out {
+      filter: blur(6px);
+      opacity: 0.3;
     }
-    #library-modal.open {
-      display: flex;
+
+    #draw-btn {
+      font-size: 1.3rem;
+      background: #007aff;
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 28px;
+      cursor: pointer;
+      box-shadow: 0 6px 15px rgba(0,122,255,0.4);
+      user-select: none;
+      transition: background 0.3s ease;
+      width: 100%;
+      max-width: 300px;
     }
-    #library-list {
+
+    #draw-btn:hover:not(:disabled) {
+      background: #005ecb;
+      box-shadow: 0 8px 20px rgba(0,94,203,0.6);
+    }
+
+    #draw-btn:disabled {
+      background: #999;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    #switch-db-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      font-size: 0.9rem;
+      color: #007aff;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      user-select: none;
+      opacity: 0.2;
+      transition: opacity 0.3s ease;
+      padding: 4px 8px;
+      border-radius: 12px;
+    }
+
+    #switch-db-btn:hover {
+      opacity: 1;
+      background: rgba(0, 122, 255, 0.1);
+    }
+
+    #db-list {
+      position: absolute;
+      top: 50px;
+      right: 14px;
       background: white;
       border-radius: 12px;
-      max-height: 70vh;
-      width: 90vw;
-      max-width: 360px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+      max-height: 240px;
       overflow-y: auto;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
-      padding: 1rem;
-      box-sizing: border-box;
-    }
-    #library-list h3 {
-      margin-top: 0;
-      margin-bottom: 1rem;
-      font-weight: 700;
-      font-size: 1.3rem;
-      color: #007aff;
-      text-align: center;
-      user-select: none;
-    }
-    .library-item {
-      padding: 12px 16px;
-      border-bottom: 1px solid #eee;
-      cursor: pointer;
-      font-weight: 500;
-      transition: background-color 0.2s;
-      user-select: none;
-      border-radius: 6px;
-    }
-    .library-item:last-child {
-      border-bottom: none;
-    }
-    .library-item:hover, .library-item:focus {
-      background-color: #007aff;
-      color: white;
-      outline: none;
+      width: 160px;
+      display: none;
+      flex-direction: column;
+      padding: 8px 0;
+      z-index: 10;
     }
 
-    /* 移动端调整 */
-    @media (max-width: 600px) {
-      main {
+    #db-list button {
+      border: none;
+      background: transparent;
+      padding: 10px 16px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 1rem;
+      color: #333;
+      user-select: none;
+      transition: background-color 0.2s ease;
+      width: 100%;
+    }
+
+    #db-list button:hover {
+      background-color: #007aff22;
+      color: #007aff;
+    }
+
+    @media (max-width: 480px) {
+      #container {
+        width: 95vw;
         padding: 1.5rem 1rem;
       }
       #draw-btn {
-        font-size: 1.3rem;
-        padding: 1rem 2.5rem;
+        font-size: 1.1rem;
+        max-width: 100%;
       }
     }
   </style>
-
-  <!-- Firebase 8.x 兼容版 SDK -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body>
-  <header>
-    <button id="select-library-btn" aria-haspopup="true" aria-expanded="false" aria-controls="library-modal" title="选择题库">选择题库</button>
-  </header>
-
-  <main>
-    <div id="current-library-title">加载中...</div>
-    <div id="question-display">请点击“抽我”开始抽题</div>
-    <button id="draw-btn">抽我</button>
-  </main>
-
-  <div id="library-modal" role="dialog" aria-modal="true" aria-labelledby="library-modal-title" tabindex="-1">
-    <div id="library-list">
-      <h3 id="library-modal-title">请选择题库</h3>
-      <!-- 动态插入库列表 -->
-    </div>
+  <div id="container">
+    <button id="switch-db-btn" title="切换题库">切换题库▼</button>
+    <div id="db-list"></div>
+    <div id="question-display">加载中...</div>
+    <button id="draw-btn" disabled>抽我</button>
   </div>
 
-<script>
-  // 配置 Firebase（请替换成你的实际配置）
-  const firebaseConfig = {
-     apiKey: "AIzaSyAu6RnEXYMRsJP3Q8EISNyQRPtbGLDYwkk",
-    authDomain: "truth-or-dare-b4b2a.firebaseapp.com",
-    databaseURL: "https://truth-or-dare-b4b2a-default-rtdb.firebaseio.com",
-    projectId: "truth-or-dare-b4b2a",
-    storageBucket: "truth-or-dare-b4b2a.firebasestorage.app",
-    messagingSenderId: "643326186626",
-    appId: "1:643326186626:web:861df5ec9c5ca8e669d09b",
-    measurementId: "G-5TXR8Y8BSR"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
-  // 获取URL参数（mode 和 submode）
-  function getQueryParam(name) {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get(name);
-  }
-  const mode = getQueryParam('mode') || 'truth'; // 默认真心话
-  let currentSubmode = null;  // 当前数据库key
-  let currentQuestions = [];  // 当前库题目数组
+  <script>
+    // Firebase 配置
+    const firebaseConfig = {
+      apiKey: "AIzaSyAu6RnEXYMRsJP3Q8EISNyQRPtbGLDYwkk",
+      authDomain: "truth-or-dare-b4b2a.firebaseapp.com",
+      databaseURL: "https://truth-or-dare-b4b2a-default-rtdb.firebaseio.com",
+      projectId: "truth-or-dare-b4b2a",
+      storageBucket: "truth-or-dare-b4b2a.firebasestorage.app",
+      messagingSenderId: "643326186626",
+      appId: "1:643326186626:web:861df5ec9c5ca8e669d09b",
+      measurementId: "G-5TXR8Y8BSR"
+    };
+    firebase.initializeApp(firebaseConfig);
 
-  // 元素引用
-  const selectLibraryBtn = document.getElementById('select-library-btn');
-  const libraryModal = document.getElementById('library-modal');
-  const libraryListDiv = document.getElementById('library-list');
-  const currentLibraryTitle = document.getElementById('current-library-title');
-  const questionDisplay = document.getElementById('question-display');
-  const drawBtn = document.getElementById('draw-btn');
+    const db = firebase.database();
 
-  // 打开/关闭选择库弹窗
-  function toggleLibraryModal(open) {
-    if (open) {
-      libraryModal.classList.add('open');
-      selectLibraryBtn.setAttribute('aria-expanded', 'true');
-      libraryModal.focus();
-    } else {
-      libraryModal.classList.remove('open');
-      selectLibraryBtn.setAttribute('aria-expanded', 'false');
-      selectLibraryBtn.focus();
+    const questionDisplay = document.getElementById('question-display');
+    const drawBtn = document.getElementById('draw-btn');
+    const switchDbBtn = document.getElementById('switch-db-btn');
+    const dbListDiv = document.getElementById('db-list');
+
+    let mode = 'truth';  // 从 URL 或默认选择，这里默认 truth
+    let currentDbKey = null;
+    let currentQuestions = [];
+    let allDbs = {};  // { dbKey: [题目数组], ... }
+
+    // 从 URL 参数读取 mode 和 submode (可选)
+    function getUrlParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
     }
-  }
-  selectLibraryBtn.addEventListener('click', () => {
-    toggleLibraryModal(true);
-  });
-  libraryModal.addEventListener('click', e => {
-    if (e.target === libraryModal) toggleLibraryModal(false);
-  });
-  libraryModal.addEventListener('keydown', e => {
-    if (e.key === 'Escape') toggleLibraryModal(false);
-  });
+    const urlMode = getUrlParam('mode');
+    if (urlMode === 'truth' || urlMode === 'dare') {
+      mode = urlMode;
+    }
 
-  // 加载题库列表（子库名字）
-  async function loadLibraries() {
-    currentLibraryTitle.textContent = '加载题库中...';
-    questionDisplay.textContent = '请点击“抽我”开始抽题';
-    try {
-      const snapshot = await db.ref(mode).once('value');
-      const data = snapshot.val();
-      if (!data) {
-        currentLibraryTitle.textContent = '暂无题库';
-        questionDisplay.textContent = '';
-        return;
+    // 载入所有数据库列表
+    async function loadDatabases() {
+      questionDisplay.textContent = '加载题库...';
+      drawBtn.disabled = true;
+
+      try {
+        const snapshot = await db.ref(mode).get();
+        if (!snapshot.exists()) {
+          questionDisplay.textContent = '题库为空';
+          return;
+        }
+        allDbs = snapshot.val();
+
+        const keys = Object.keys(allDbs);
+        if (keys.length === 0) {
+          questionDisplay.textContent = '题库为空';
+          return;
+        }
+
+        currentDbKey = keys[0];
+        currentQuestions = allDbs[currentDbKey] || [];
+
+        renderDbList(keys);
+        updateCurrentDbDisplay();
+        drawBtn.disabled = false;
+        questionDisplay.textContent = '点击“抽我”开始抽题';
+
+      } catch (e) {
+        questionDisplay.textContent = '加载失败，请稍后重试';
+        console.error('读取数据失败', e);
       }
+    }
 
-      // 清空旧列表
-      libraryListDiv.querySelectorAll('.library-item').forEach(el => el.remove());
-
-      // 生成库列表项
-      Object.keys(data).forEach(submode => {
-        const div = document.createElement('div');
-        div.className = 'library-item';
-        div.textContent = submode;
-        div.tabIndex = 0;
-        div.dataset.submode = submode;
-        div.addEventListener('click', () => {
-          currentSubmode = submode;
-          toggleLibraryModal(false);
-          loadQuestions(mode, currentSubmode);
-        });
-        div.addEventListener('keydown', e => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            div.click();
-          }
-        });
-        libraryListDiv.appendChild(div);
+    // 渲染数据库切换列表（隐藏）
+    function renderDbList(dbKeys) {
+      dbListDiv.innerHTML = '';
+      dbKeys.forEach(key => {
+        const btn = document.createElement('button');
+        btn.textContent = key;
+        btn.onclick = () => {
+          currentDbKey = key;
+          currentQuestions = allDbs[key] || [];
+          updateCurrentDbDisplay();
+          questionDisplay.textContent = '切换到题库：' + key + '，点击“抽我”开始抽题';
+          drawBtn.textContent = '抽我';
+          dbListDiv.style.display = 'none';
+          drawBtn.disabled = currentQuestions.length === 0;
+        };
+        dbListDiv.appendChild(btn);
       });
-
-      // 默认加载第一个库
-      if (!currentSubmode) {
-        currentSubmode = Object.keys(data)[0];
-      }
-
-      await loadQuestions(mode, currentSubmode);
-    } catch (err) {
-      currentLibraryTitle.textContent = '加载失败';
-      questionDisplay.textContent = '请检查网络或数据库配置';
-      console.error(err);
     }
-  }
 
-  // 加载题目
-  async function loadQuestions(mode, submode) {
-    currentLibraryTitle.textContent = `题库：${submode}`;
-    questionDisplay.textContent = '请点击“抽我”开始抽题';
-    drawBtn.textContent = '抽我';
-    drawBtn.disabled = false;
-    try {
-      const snapshot = await db.ref(`${mode}/${submode}`).once('value');
-      const data = snapshot.val();
-      if (!data) {
-        currentQuestions = [];
-        questionDisplay.textContent = '该题库暂无题目';
-        drawBtn.disabled = true;
-        return;
-      }
-      // 假设数据库结构是对象，value为字符串题目
-      currentQuestions = Object.values(data).filter(q => typeof q === 'string' && q.trim() !== '');
+    // 切换数据库按钮显示当前选中数据库
+    function updateCurrentDbDisplay() {
+      switchDbBtn.textContent = `切换题库 (${currentDbKey}) ▼`;
+    }
+
+    // 动画效果，模糊淡出淡入切换题目
+    function animateQuestionChange(newQuestion) {
+      questionDisplay.classList.add('blur-out');
+      setTimeout(() => {
+        questionDisplay.textContent = newQuestion;
+        questionDisplay.classList.remove('blur-out');
+      }, 500);
+    }
+
+    // 抽题按钮逻辑
+    function drawQuestion() {
       if (currentQuestions.length === 0) {
-        questionDisplay.textContent = '该题库暂无有效题目';
+        questionDisplay.textContent = '无可用题目';
         drawBtn.disabled = true;
         return;
       }
-    } catch (err) {
-      currentQuestions = [];
-      questionDisplay.textContent = '题目加载失败';
-      drawBtn.disabled = true;
-      console.error(err);
+      const idx = Math.floor(Math.random() * currentQuestions.length);
+      const question = currentQuestions[idx];
+      animateQuestionChange(question);
+      drawBtn.textContent = '继续抽我';
     }
-  }
 
-  // 抽题逻辑
-  function drawQuestion() {
-    if (currentQuestions.length === 0) {
-      questionDisplay.textContent = '无可用题目';
-      drawBtn.disabled = true;
-      return;
-    }
-    // 随机题目
-    const idx = Math.floor(Math.random() * currentQuestions.length);
-    const question = currentQuestions[idx];
-    questionDisplay.textContent = question;
-    drawBtn.textContent = '继续抽我';
-  }
+    // 绑定事件
+    drawBtn.onclick = drawQuestion;
+    switchDbBtn.onclick = () => {
+      if (dbListDiv.style.display === 'flex') {
+        dbListDiv.style.display = 'none';
+      } else {
+        dbListDiv.style.display = 'flex';
+      }
+    };
 
-  drawBtn.addEventListener('click', () => {
-    drawQuestion();
-  });
-
-  // 初始化
-  loadLibraries();
-</script>
+    // 页面初始化
+    loadDatabases();
+  </script>
 </body>
 </html>
