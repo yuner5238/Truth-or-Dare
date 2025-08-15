@@ -291,27 +291,82 @@
   </div>
 </div>
 
-<!-- Firebase SDK（统一 9.22.2） -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-
 <script>
-  // Firebase 配置
-  const firebaseConfig = {
-    apiKey: "AIzaSyAu6RnEXYMRsJP3Q8EISNyQRPtbGLDYwkk",
-    authDomain: "truth-or-dare-b4b2a.firebaseapp.com",
-    databaseURL: "https://truth-or-dare-b4b2a-default-rtdb.firebaseio.com",
-    projectId: "truth-or-dare-b4b2a",
-    storageBucket: "truth-or-dare-b4b2a.firebasestorage.app",
-    messagingSenderId: "643326186626",
-    appId: "1:643326186626:web:861df5ec9c5ca8e669d09b",
-    measurementId: "G-5TXR8Y8BSR"
+  // ========== 本地数据模式（替代 Firebase） ==========
+  // 数据结构与原 Realtime Database 保持一致：
+  // { truth: { groupName: [ "题目", ... ] }, dare: { groupName: [ ... ] } }
+  const STORE_KEY = 'tod_local_store_v1';
+
+  const DEFAULT_STORE = {
+    truth: {
+      classic: [
+        "第一次见到我时，你的第一印象是什么？",
+        "有什么想说却一直没开口的话？",
+        "你心里最柔软的地方，藏着谁或什么？",
+        "你做过最幼稚却至今不后悔的一件事？",
+        "你最害怕在关系里失去的是什么？",
+        "说一件你以为我不知道、可你希望我知道的事。",
+        "最近一次认真心动是什么时候？",
+        "你更需要被理解，还是被迁就？为什么？"
+      ],
+      whisper: [
+        "闭上眼，你此刻最想听我说的一句话是什么？",
+        "你为谁改过一个小习惯？结果如何？",
+        "哪首歌像极了你现在的心情？为什么？",
+        "如果我们是一部电影，你觉得现在处在哪个章节？",
+        "你希望我更懂你的哪一面？",
+        "你心里反复提到的那个名字，现在还会响吗？",
+        "你最抗拒提起的回忆是什么？",
+        "请形容我此刻给你的感觉，用三个词。"
+      ]
+    },
+    dare: {
+      gentle: [
+        "和我对视不说话 15 秒。",
+        "把手机亮度调低，对我说一句只属于今晚的话。",
+        "用你喜欢的方式让我笑一次。",
+        "选一首歌，和我共享 30 秒。",
+        "闭眼伸手，让我带你走 10 步。",
+        "把今天最真诚的一句夸奖送给我。",
+        "把你的小秘密写在便签里，折好交给我保管。",
+        "把你的手交给我，静静数 20 个呼吸。"
+      ],
+      wild: [
+        "用三句话把我撩到脸红。",
+        "用不超过 10 个字，定义我们现在的关系。",
+        "用你最拿手的方式贴近我 5 秒。",
+        "把我当成你的镜子，说出此刻你最真实的样子。",
+        "给我一个你风格的“信号”，不解释。",
+        "在不说“喜欢”的情况下，表达“喜欢”。",
+        "把我的名字和一个愿望写在同一句话里。",
+        "闭眼描述我身上的一个细节，越具体越好。"
+      ]
+    }
   };
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+  function loadStore() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return clone(DEFAULT_STORE);
+      const data = JSON.parse(raw);
+      // 简单容错：缺什么补什么
+      if (!data.truth) data.truth = {};
+      if (!data.dare) data.dare = {};
+      return data;
+    } catch (_) {
+      return clone(DEFAULT_STORE);
+    }
+  }
 
-  // 元素
+  function saveStore(data) {
+    localStorage.setItem(STORE_KEY, JSON.stringify(data));
+  }
+
+  function clone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  // ========== 原逻辑保留（仅将 Firebase 调用替换为本地读写） ==========
   const pageTitle = document.getElementById('pageTitle');
   const questionDiv = document.getElementById('question');
   const drawBtn = document.getElementById('drawBtn');
@@ -328,13 +383,14 @@
   const cancelAddBtn = document.getElementById('cancelAddBtn');
   const saveAddBtn = document.getElementById('saveAddBtn');
 
+  let store = loadStore();
+
   // 数据
   let mode = 'truth';
   let databases = [];
   let currentDbIndex = 0;
   let questions = [];
   let initialSubmode = null;
-
   let deck = [];
 
   function shuffle(arr) {
@@ -351,7 +407,6 @@
     const params = new URLSearchParams(window.location.search);
     if (params.has('mode')) mode = String(params.get('mode') || '').toLowerCase();
     if (params.has('submode')) initialSubmode = params.get('submode');
-    // 容错：只允许 truth/dare，其他一律回落到 truth
     if (mode !== 'truth' && mode !== 'dare') mode = 'truth';
   }
   getUrlParams();
@@ -391,7 +446,6 @@
     }
     pageTitle.textContent = L.title;
     document.title = L.title;
-    // 初始按钮与提示
     drawBtn.textContent = L.btnStart;
     questionDiv.textContent = L.hintIdle;
   }
@@ -428,19 +482,12 @@
     }
   }
 
-  // 加载组列表
+  // 读取当前模式的所有组名
   async function loadDatabases() {
     const L = getModeLabels();
     try {
-      const snapshot = await db.ref(`/${mode}`).once('value');
-      const val = snapshot.val();
-      if (!val) {
-        databases = [];
-        questionDiv.textContent = '题库为空';
-        drawBtn.disabled = true;
-        return;
-      }
-      databases = Object.keys(val);
+      const modeData = store[mode] || {};
+      databases = Object.keys(modeData);
       if (!databases.length) {
         questionDiv.textContent = '题库为空';
         drawBtn.disabled = true;
@@ -454,7 +501,6 @@
       }
       await loadQuestions();
       drawBtn.disabled = false;
-      // 按模式设置启动按钮文本
       drawBtn.textContent = L.btnStart;
     } catch (error) {
       console.error(error);
@@ -463,18 +509,16 @@
     }
   }
 
-  // 加载题目（兼容对象/数组）
+  // 读取当前组的问题列表
   async function loadQuestions() {
     const L = getModeLabels();
     const dbName = databases[currentDbIndex];
     questionDiv.textContent = '加载中…';
     drawBtn.disabled = true;
     try {
-      const snapshot = await db.ref(`/${mode}/${dbName}`).once('value');
-      const val = snapshot.val();
-      const list = val
-        ? Array.isArray(val) ? val : Object.values(val)
-        : [];
+      const modeData = store[mode] || {};
+      const val = modeData[dbName];
+      const list = Array.isArray(val) ? val : [];
       questions = list
         .map(x => (typeof x === 'string' ? x.trim() : ''))
         .filter(Boolean);
@@ -517,15 +561,19 @@
     drawBtn.disabled = false;
   }
 
-  // 删除组
+  // 删除组（当前模式下）
   async function deleteGroup(name) {
     if (!name) return;
     const confirmed = confirm(`确定删除组 "${name}"？此操作不可撤销。`);
     if (!confirmed) return;
     try {
-      await db.ref(`/${mode}/${name}`).remove();
+      if (!store[mode]) store[mode] = {};
+      delete store[mode][name];
+      saveStore(store);
+
       const idx = databases.indexOf(name);
       if (idx >= 0) databases.splice(idx, 1);
+
       if (!databases.length) {
         currentDbIndex = 0; questions = []; deck = [];
         questionDiv.textContent = '题库为空';
@@ -557,9 +605,11 @@
       .filter(Boolean);
   }
 
-  // 新增组
+  // 新增组（当前模式下）
   async function addGroup(name, items) {
-    await db.ref(`/${mode}/${name}`).set(items);
+    if (!store[mode]) store[mode] = {};
+    store[mode][name] = items;
+    saveStore(store);
   }
 
   // Modal 控制
