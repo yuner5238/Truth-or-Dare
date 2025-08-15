@@ -1,646 +1,976 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-width=1" />
-<title>抽题</title>
-<style>
-  * { box-sizing: border-box; }
-  :root {
-    --bg-1: #1e3c72;
-    --bg-2: #2a5298;
-    --accent: #ff6f61;
-    --accent-shadow: rgba(255, 111, 97, 0.6);
-    --panel-bg: rgba(22, 28, 44, 0.96);
-  }
-  /* 真心话：魅惑粉 */
-  .theme-truth {
-    --bg-1: #ff5fa2;
-    --bg-2: #ff3d77;
-    --accent: #ff6f91;
-    --accent-shadow: rgba(255, 111, 145, 0.6);
-    --panel-bg: rgba(34, 16, 28, 0.96);
-  }
-  /* 大冒险：魅惑紫 */
-  .theme-dare {
-    --bg-1: #6a11cb;
-    --bg-2: #8e2de2;
-    --accent: #9b6cff;
-    --accent-shadow: rgba(155, 108, 255, 0.55);
-    --panel-bg: rgba(22, 16, 34, 0.96);
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-width=1" />
+  <title>抽题</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-    background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
-    color: #eee;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    height: 100vh;
-    overflow: hidden;
-    padding: 1rem;
-  }
-  header {
-    width: 100%;
-    text-align: center;
-    font-weight: 800;
-    font-size: 1.8rem;
-    margin-bottom: 2rem;
-    user-select: none;
-    letter-spacing: 0.06em;
-  }
-  #container {
-    flex: 1;
-    width: 100%;
-    max-width: 520px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-  }
-  #question {
-    min-height: 120px;
-    padding: 1.2rem 1.5rem;
-    margin-bottom: 2rem;
-    background: rgba(255 255 255 / 0.10);
-    border-radius: 12px;
-    font-size: 1.4rem;
-    line-height: 1.5;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    user-select: none;
-    box-shadow: 0 0 10px rgba(255 255 255 / 0.15);
-    transition: opacity 0.5s ease;
-  }
-  button#drawBtn {
-    background: var(--accent);
-    border: none;
-    border-radius: 30px;
-    color: white;
-    font-weight: 800;
-    font-size: 1.2rem;
-    padding: 0.85rem 2.6rem;
-    cursor: pointer;
-    user-select: none;
-    box-shadow: 0 6px 15px var(--accent-shadow);
-    transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.1s ease;
-    will-change: transform, filter, color, text-shadow;
-  }
-  button#drawBtn:active { transform: scale(0.98); }
-  button#drawBtn:disabled { cursor: not-allowed; opacity: 0.7; }
-  button#drawBtn:hover:not(:disabled) {
-    filter: brightness(1.05);
-    box-shadow: 0 8px 22px var(--accent-shadow);
-  }
+    :root {
+      --bg-1: #1e3c72;
+      --bg-2: #2a5298;
+      --accent: #ff6f61;
+      --accent-shadow: rgba(255, 111, 97, 0.6);
+      --panel-bg: rgba(22, 28, 44, 0.96);
+    }
 
-  /* 更隐蔽：数据库按钮 */
-  #switchDbBtn {
-    position: absolute;
-    top: 8px;
-    right: 10px;
-    background: transparent;
-    border: none;
-    color: rgba(255,255,255,0.35);
-    font-size: 0.85rem;
-    padding: 4px 6px;
-    cursor: pointer;
-    user-select: none;
-    opacity: 0.35;
-    transition: opacity 0.2s ease, color 0.2s ease, transform 0.1s ease;
-  }
-  #switchDbBtn:hover {
-    opacity: 0.8;
-    color: rgba(255,255,255,0.75);
-  }
-  #switchDbBtn:focus { outline: none; opacity: 0.8; }
+    /* 真心话：魅惑粉 */
+    .theme-truth {
+      --bg-1: #ff5fa2;
+      --bg-2: #ff3d77;
+      --accent: #ff6f91;
+      --accent-shadow: rgba(255, 111, 145, 0.6);
+      --panel-bg: rgba(34, 16, 28, 0.96);
+    }
 
-  /* 数据库面板 */
-  #dbPanel {
-    position: absolute;
-    top: 40px;
-    right: 10px;
-    width: 320px;
-    max-height: 60vh;
-    overflow: auto;
-    background: var(--panel-bg);
-    border: 1px solid rgba(255 255 255 / 0.2);
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-    display: none;
-    z-index: 20;
-  }
-  #dbPanel.open { display: block; }
-  .dbPanel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 12px;
-    border-bottom: 1px solid rgba(255 255 255 / 0.12);
-  }
-  .dbPanel-title { font-weight: 700; font-size: 1rem; color: #fff; }
-  .dbPanel-actions { display: flex; gap: 8px; }
-  .btn {
-    background: rgba(255 255 255 / 0.1);
-    border: 1px solid rgba(255 255 255 / 0.2);
-    color: #fff;
-    border-radius: 8px;
-    padding: 6px 10px;
-    font-size: 0.9rem;
-    cursor: pointer;
-  }
-  .btn:hover { background: rgba(255 255 255 / 0.18); }
-  .btn-danger {
-    background: rgba(255, 81, 81, 0.12);
-    border-color: rgba(255,81,81,0.35);
-  }
-  .btn-danger:hover { background: rgba(255,81,81,0.22); }
-  .btn-primary {
-    background: rgba(64, 191, 128, 0.18);
-    border-color: rgba(64,191,128,0.35);
-  }
-  .btn-primary:hover { background: rgba(64,191,128,0.28); }
-  .dbPanel-list { list-style: none; margin: 0; padding: 6px 8px 10px; }
-  .dbPanel-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 8px 6px;
-    border-bottom: 1px dashed rgba(255 255 255 / 0.08);
-  }
-  .dbPanel-item:last-child { border-bottom: none; }
-  .dbPanel-name {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.95rem;
-    color: #eaeaea;
-    cursor: pointer;
-    user-select: none;
-  }
-  .dbPanel-name .badge {
-    font-size: 0.75rem;
-    padding: 2px 6px;
-    color: #0f0;
-    background: rgba(57, 211, 83, 0.18);
-    border: 1px solid rgba(57, 211, 83, 0.45);
-    border-radius: 6px;
-  }
-  .dbPanel-item .row-actions { display: inline-flex; gap: 6px; }
+    /* 大冒险：魅惑紫 */
+    .theme-dare {
+      --bg-1: #6a11cb;
+      --bg-2: #8e2de2;
+      --accent: #9b6cff;
+      --accent-shadow: rgba(155, 108, 255, 0.55);
+      --panel-bg: rgba(22, 16, 34, 0.96);
+    }
 
-  /* 新增组 Modal */
-  #addModalMask {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.45);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 30;
-  }
-  #addModalMask.open { display: flex; }
-  .modal {
-    width: min(92vw, 520px);
-    background: #101726;
-    border: 1px solid rgba(255 255 255 / 0.2);
-    border-radius: 14px;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.45);
-    padding: 16px;
-    color: #eaeaea;
-  }
-  .modal h3 { margin: 0 0 10px; font-size: 1.2rem; }
-  .modal .form-row { margin-bottom: 10px; }
-  .modal label {
-    display: block;
-    font-size: 0.9rem;
-    color: #cbd5e1;
-    margin-bottom: 6px;
-  }
-  .modal input[type="text"], .modal textarea {
-    width: 100%;
-    background: rgba(255 255 255 / 0.06);
-    border: 1px solid rgba(255 255 255 / 0.22);
-    color: #fff;
-    border-radius: 8px;
-    padding: 8px 10px;
-    outline: none;
-  }
-  .modal textarea { min-height: 140px; resize: vertical; line-height: 1.5; }
-  .modal .hint { font-size: 0.85rem; color: #9fb4d3; }
-  .modal .actions { margin-top: 12px; display: flex; justify-content: flex-end; gap: 10px; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+        Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+      background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      padding: 1rem;
+    }
 
-  /* 动画 */
-  @keyframes spinBlur {
-    0% { filter: blur(0); transform: rotate(0deg); color: #ff6f61; text-shadow: none; }
-    50% { filter: blur(5px); transform: rotate(720deg); color: #ffd966; text-shadow: 0 0 12px #ffd966, 0 0 20px #ffd966; }
-    100% { filter: blur(0); transform: rotate(1080deg); color: #39d353; text-shadow: 0 0 25px #39d353, 0 0 40px #39d353; }
-  }
-  .animate-spinBlur { animation: spinBlur 2.5s ease forwards; }
-  @keyframes fadeInOpacity {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .fadeIn { animation: fadeInOpacity 0.6s ease forwards; }
-</style>
+    header {
+      width: 100%;
+      text-align: center;
+      font-weight: 800;
+      font-size: 1.8rem;
+      margin-bottom: 2rem;
+      user-select: none;
+      letter-spacing: 0.06em;
+    }
+
+    #container {
+      flex: 1;
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    #question {
+      min-height: 120px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2rem;
+      background: rgba(255 255 255 / 0.10);
+      border-radius: 12px;
+      font-size: 1.4rem;
+      line-height: 1.5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      user-select: none;
+      box-shadow: 0 0 10px rgba(255 255 255 / 0.15);
+      transition: opacity 0.5s ease;
+    }
+
+    button#drawBtn {
+      background: var(--accent);
+      border: none;
+      border-radius: 30px;
+      color: white;
+      font-weight: 800;
+      font-size: 1.2rem;
+      padding: 0.85rem 2.6rem;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 6px 15px var(--accent-shadow);
+      transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.1s ease;
+      will-change: transform, filter, color, text-shadow;
+    }
+
+    button#drawBtn:active {
+      transform: scale(0.98);
+    }
+
+    button#drawBtn:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    button#drawBtn:hover:not(:disabled) {
+      filter: brightness(1.05);
+      box-shadow: 0 8px 22px var(--accent-shadow);
+    }
+
+    /* 更隐蔽：数据库按钮 */
+    #switchDbBtn {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 0.85rem;
+      padding: 4px 6px;
+      cursor: pointer;
+      user-select: none;
+      opacity: 0.35;
+      transition: opacity 0.2s ease, color 0.2s ease, transform 0.1s ease;
+    }
+
+    #switchDbBtn:hover {
+      opacity: 0.8;
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    #switchDbBtn:focus {
+      outline: none;
+      opacity: 0.8;
+    }
+
+    /* 数据库面板 */
+    #dbPanel {
+      position: absolute;
+      top: 40px;
+      right: 10px;
+      width: 360px;
+      max-height: 60vh;
+      overflow: auto;
+      background: var(--panel-bg);
+      border: 1px solid rgba(255 255 255 / 0.2);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      display: none;
+      z-index: 20;
+    }
+
+    #dbPanel.open {
+      display: block;
+    }
+
+    .dbPanel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255 255 255 / 0.12);
+    }
+
+    .dbPanel-title {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #fff;
+    }
+
+    .dbPanel-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      background: rgba(255 255 255 / 0.1);
+      border: 1px solid rgba(255 255 255 / 0.2);
+      color: #fff;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: rgba(255 255 255 / 0.18);
+    }
+
+    .btn-danger {
+      background: rgba(255, 81, 81, 0.12);
+      border-color: rgba(255, 81, 81, 0.35);
+    }
+
+    .btn-danger:hover {
+      background: rgba(255, 81, 81, 0.22);
+    }
+
+    .btn-primary {
+      background: rgba(64, 191, 128, 0.18);
+      border-color: rgba(64, 191, 128, 0.35);
+    }
+
+    .btn-primary:hover {
+      background: rgba(64, 191, 128, 0.28);
+    }
+
+    .btn-secondary {
+      background: rgba(111, 168, 255, 0.14);
+      border-color: rgba(111, 168, 255, 0.35);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(111, 168, 255, 0.24);
+    }
+
+    .dbPanel-list {
+      list-style: none;
+      margin: 0;
+      padding: 6px 8px 10px;
+    }
+
+    .dbPanel-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 6px;
+      border-bottom: 1px dashed rgba(255 255 255 / 0.08);
+    }
+
+    .dbPanel-item:last-child {
+      border-bottom: none;
+    }
+
+    .dbPanel-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.95rem;
+      color: #eaeaea;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .dbPanel-name .badge {
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      color: #0f0;
+      background: rgba(57, 211, 83, 0.18);
+      border: 1px solid rgba(57, 211, 83, 0.45);
+      border-radius: 6px;
+    }
+
+    .dbPanel-item .row-actions {
+      display: inline-flex;
+      gap: 6px;
+    }
+
+    /* 新增组 Modal */
+    #addModalMask,
+    #viewModalMask {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+    }
+
+    #addModalMask.open,
+    #viewModalMask.open {
+      display: flex;
+    }
+
+    .modal {
+      width: min(92vw, 560px);
+      background: #101726;
+      border: 1px solid rgba(255 255 255 / 0.2);
+      border-radius: 14px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+      padding: 16px;
+      color: #eaeaea;
+    }
+
+    .modal h3 {
+      margin: 0 0 10px;
+      font-size: 1.2rem;
+    }
+
+    .modal .form-row {
+      margin-bottom: 10px;
+    }
+
+    .modal label {
+      display: block;
+      font-size: 0.9rem;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+
+    .modal input[type="text"],
+    .modal textarea {
+      width: 100%;
+      background: rgba(255 255 255 / 0.06);
+      border: 1px solid rgba(255 255 255 / 0.22);
+      color: #fff;
+      border-radius: 8px;
+      padding: 8px 10px;
+      outline: none;
+    }
+
+    .modal textarea {
+      min-height: 140px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .modal .hint {
+      font-size: 0.85rem;
+      color: #9fb4d3;
+    }
+
+    .modal .actions {
+      margin-top: 12px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* 查看组 Modal 专用 */
+    .questions-scroll {
+      max-height: min(60vh, 520px);
+      overflow: auto;
+      padding: 8px 4px 0;
+      border-top: 1px dashed rgba(255 255 255 / 0.12);
+      margin-top: 8px;
+    }
+
+    .questions-scroll ol {
+      margin: 0;
+      padding-left: 1.25rem;
+    }
+
+    .questions-scroll li {
+      padding: 6px 0;
+      border-bottom: 1px dashed rgba(255 255 255 / 0.06);
+      line-height: 1.5;
+    }
+
+    .questions-scroll li:last-child {
+      border-bottom: none;
+    }
+
+    /* 动画 */
+    @keyframes spinBlur {
+      0% {
+        filter: blur(0);
+        transform: rotate(0deg);
+        color: #ff6f61;
+        text-shadow: none;
+      }
+
+      50% {
+        filter: blur(5px);
+        transform: rotate(720deg);
+        color: #ffd966;
+        text-shadow: 0 0 12px #ffd966, 0 0 20px #ffd966;
+      }
+
+      100% {
+        filter: blur(0);
+        transform: rotate(1080deg);
+        color: #39d353;
+        text-shadow: 0 0 25px #39d353, 0 0 40px #39d353;
+      }
+    }
+
+    .animate-spinBlur {
+      animation: spinBlur 2.5s ease forwards;
+    }
+
+    @keyframes fadeInOpacity {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .fadeIn {
+      animation: fadeInOpacity 0.6s ease forwards;
+    }
+  </style>
 </head>
+
 <body>
-<header id="pageTitle">抽题</header>
+  <header id="pageTitle">抽题</header>
 
-<div id="container">
-  <!-- 更隐蔽的按钮：低不透明度的小字按钮 -->
-  <button id="switchDbBtn" title="题库">数据库</button>
+  <div id="container">
+    <!-- 更隐蔽的按钮：低不透明度的小字按钮 -->
+    <button id="switchDbBtn" title="题库">数据库</button>
 
-  <div id="dbPanel" aria-hidden="true">
-    <div class="dbPanel-header">
-      <div class="dbPanel-title">题库组</div>
-      <div class="dbPanel-actions">
-        <button id="addGroupBtn" class="btn btn-primary">新增组</button>
-        <button id="closePanelBtn" class="btn">关闭</button>
+    <div id="dbPanel" aria-hidden="true">
+      <div class="dbPanel-header">
+        <div class="dbPanel-title">题库组</div>
+        <div class="dbPanel-actions">
+          <button id="addGroupBtn" class="btn btn-primary">新增组</button>
+          <button id="closePanelBtn" class="btn">关闭</button>
+        </div>
+      </div>
+      <ul id="dbList" class="dbPanel-list"></ul>
+    </div>
+
+    <div id="question">加载中…</div>
+    <button id="drawBtn" disabled>抽我</button>
+  </div>
+
+  <!-- 新增组 Modal -->
+  <div id="addModalMask" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
+    <div class="modal">
+      <h3 id="addModalTitle">新增题库组</h3>
+      <div class="form-row">
+        <label for="groupNameInput">组名（仅限字母、数字、下划线、中划线）</label>
+        <input id="groupNameInput" type="text" placeholder="例如：my_truth_set" />
+      </div>
+      <div class="form-row">
+        <label for="questionsInput">题目列表</label>
+        <textarea id="questionsInput" placeholder="可按行输入，或用逗号分隔"></textarea>
+        <div class="hint">规范格式示例："题目1", "题目2", "题目3"。支持每行一个，或用逗号分隔；会自动去掉引号与空格。</div>
+      </div>
+      <div class="actions">
+        <button id="cancelAddBtn" class="btn">取消</button>
+        <button id="saveAddBtn" class="btn btn-primary">保存</button>
       </div>
     </div>
-    <ul id="dbList" class="dbPanel-list"></ul>
   </div>
 
-  <div id="question">加载中…</div>
-  <button id="drawBtn" disabled>抽我</button>
-</div>
-
-<!-- 新增组 Modal -->
-<div id="addModalMask" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
-  <div class="modal">
-    <h3 id="addModalTitle">新增题库组</h3>
-    <div class="form-row">
-      <label for="groupNameInput">组名（仅限字母、数字、下划线、中划线）</label>
-      <input id="groupNameInput" type="text" placeholder="例如：my_truth_set" />
-    </div>
-    <div class="form-row">
-      <label for="questionsInput">题目列表</label>
-      <textarea id="questionsInput" placeholder="可按行输入，或用逗号分隔"></textarea>
-      <div class="hint">规范格式示例："题目1", "题目2", "题目3"。支持每行一个，或用逗号分隔；会自动去掉引号与空格。</div>
-    </div>
-    <div class="actions">
-      <button id="cancelAddBtn" class="btn">取消</button>
-      <button id="saveAddBtn" class="btn btn-primary">保存</button>
+  <!-- 查看组 Modal -->
+  <div id="viewModalMask" role="dialog" aria-modal="true" aria-labelledby="viewModalTitle">
+    <div class="modal">
+      <h3 id="viewModalTitle">题组</h3>
+      <div class="questions-scroll">
+        <ol id="viewQuestionsList"></ol>
+      </div>
+      <div class="actions">
+        <button id="closeViewBtn" class="btn">关闭</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Firebase SDK（统一 9.22.2） -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <!-- Firebase SDK（如使用本地模式，可将下面两行注释掉） -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
-<script>
-  // Firebase 配置
-  const firebaseConfig = {
-    apiKey: "AIzaSyAu6RnEXYMRsJP3Q8EISNyQRPtbGLDYwkk",
-    authDomain: "truth-or-dare-b4b2a.firebaseapp.com",
-    databaseURL: "https://truth-or-dare-b4b2a-default-rtdb.firebaseio.com",
-    projectId: "truth-or-dare-b4b2a",
-    storageBucket: "truth-or-dare-b4b2a.firebasestorage.app",
-    messagingSenderId: "643326186626",
-    appId: "1:643326186626:web:861df5ec9c5ca8e669d09b",
-    measurementId: "G-5TXR8Y8BSR"
-  };
+  <script>
+    // ============ 模式切换 ============
+    // 将下行改为 false，或将上方两条 Firebase SDK <script> 注释掉，即可切换到本地模式（使用 localStorage）
+    const USE_FIREBASE = true;
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+    // ============ Firebase 配置（云端模式） ============
+    const firebaseConfig = {
+      apiKey: "AIzaSyAu6RnEXYMRsJP3Q8EISNyQRPtbGLDYwkk",
+      authDomain: "truth-or-dare-b4b2a.firebaseapp.com",
+      databaseURL: "https://truth-or-dare-b4b2a-default-rtdb.firebaseio.com",
+      projectId: "truth-or-dare-b4b2a",
+      storageBucket: "truth-or-dare-b4b2a.firebasestorage.app",
+      messagingSenderId: "643326186626",
+      appId: "1:643326186626:web:861df5ec9c5ca8e669d09b",
+      measurementId: "G-5TXR8Y8BSR"
+    };
 
-  // 元素
-  const pageTitle = document.getElementById('pageTitle');
-  const questionDiv = document.getElementById('question');
-  const drawBtn = document.getElementById('drawBtn');
-  const switchDbBtn = document.getElementById('switchDbBtn');
+    // ============ 数据层封装（自动适配本地/云端） ============
+    const isFirebaseAvailable = typeof firebase !== 'undefined';
+    const isFirebaseMode = USE_FIREBASE && isFirebaseAvailable;
 
-  const dbPanel = document.getElementById('dbPanel');
-  const dbList = document.getElementById('dbList');
-  const addGroupBtn = document.getElementById('addGroupBtn');
-  const closePanelBtn = document.getElementById('closePanelBtn');
+    // 本地数据结构示例（可修改）
+    const LOCAL_STORAGE_KEY = 'tod_local_db_v1';
+    const defaultLocalDB = {
+      truth: {
+        classic: [
+          "你最近一次心动是什么时候？",
+          "你最不想被问到的问题是什么？为什么？",
+          "你做过最冲动的一件事？",
+          "你害怕失去什么？"
+        ],
+        soft: [
+          "今天最想对我说的一句话？",
+          "你心里的小确幸是什么？"
+        ]
+      },
+      dare: {
+        classic: [
+          "用表情演一个 5 秒内心戏",
+          "闭眼描述我现在的样子 10 秒",
+          "让对方指定一个口头禅并坚持 3 分钟"
+        ]
+      }
+    };
+    let localDB = null;
 
-  const addModalMask = document.getElementById('addModalMask');
-  const groupNameInput = document.getElementById('groupNameInput');
-  const questionsInput = document.getElementById('questionsInput');
-  const cancelAddBtn = document.getElementById('cancelAddBtn');
-  const saveAddBtn = document.getElementById('saveAddBtn');
-
-  // 数据
-  let mode = 'truth';
-  let databases = [];
-  let currentDbIndex = 0;
-  let questions = [];
-  let initialSubmode = null;
-
-  let deck = [];
-
-  function shuffle(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
+    function loadLocalDB() {
+      try {
+        const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+        localDB = raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(defaultLocalDB));
+      } catch {
+        localDB = JSON.parse(JSON.stringify(defaultLocalDB));
+      }
     }
-  }
-  function resetDeck() { deck = [...questions]; shuffle(deck); }
-  function playFade(el) { el.classList.remove('fadeIn'); void el.offsetWidth; el.classList.add('fadeIn'); }
+    function saveLocalDB() {
+      try { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localDB)); } catch { }
+    }
+    function getByPath(obj, path) {
+      // path like "/truth", "/truth/classic"
+      const parts = path.replace(/^\/+/, '').split('/').filter(Boolean);
+      let cur = obj;
+      for (const p of parts) {
+        if (cur == null) return null;
+        cur = cur[p];
+      }
+      return cur ?? null;
+    }
+    function setByPath(obj, path, value) {
+      const parts = path.replace(/^\/+/, '').split('/').filter(Boolean);
+      let cur = obj;
+      for (let i = 0; i < parts.length - 1; i++) {
+        const p = parts[i];
+        if (typeof cur[p] !== 'object' || cur[p] === null) cur[p] = {};
+        cur = cur[p];
+      }
+      cur[parts[parts.length - 1]] = value;
+    }
+    function removeByPath(obj, path) {
+      const parts = path.replace(/^\/+/, '').split('/').filter(Boolean);
+      let cur = obj;
+      for (let i = 0; i < parts.length - 1; i++) {
+        const p = parts[i];
+        if (typeof cur[p] !== 'object' || cur[p] === null) return;
+        cur = cur[p];
+      }
+      delete cur[parts[parts.length - 1]];
+    }
 
-  // URL 参数
-  function getUrlParams() {
-    const params = new URLSearchParams(window.location.search);
-    if (params.has('mode')) mode = String(params.get('mode') || '').toLowerCase();
-    if (params.has('submode')) initialSubmode = params.get('submode');
-    // 容错：只允许 truth/dare，其他一律回落到 truth
-    if (mode !== 'truth' && mode !== 'dare') mode = 'truth';
-  }
-  getUrlParams();
+    // 统一 API
+    async function dbGet(path) {
+      if (isFirebaseMode) {
+        const snap = await firebase.database().ref(path).once('value');
+        return snap.val();
+      } else {
+        if (!localDB) loadLocalDB();
+        return getByPath(localDB, path);
+      }
+    }
+    async function dbSet(path, value) {
+      if (isFirebaseMode) {
+        await firebase.database().ref(path).set(value);
+      } else {
+        if (!localDB) loadLocalDB();
+        setByPath(localDB, path, value);
+        saveLocalDB();
+      }
+    }
+    async function dbRemove(path) {
+      if (isFirebaseMode) {
+        await firebase.database().ref(path).remove();
+      } else {
+        if (!localDB) loadLocalDB();
+        removeByPath(localDB, path);
+        saveLocalDB();
+      }
+    }
 
-  // 模式文案
-  function getModeLabels() {
-    if (mode === 'dare') {
+    // 若启用 Firebase，则初始化
+    if (isFirebaseMode) {
+      firebase.initializeApp(firebaseConfig);
+    } else {
+      // 本地模式：提前加载一次数据
+      loadLocalDB();
+    }
+
+    // ============ 元素 ============
+    const pageTitle = document.getElementById('pageTitle');
+    const questionDiv = document.getElementById('question');
+    const drawBtn = document.getElementById('drawBtn');
+    const switchDbBtn = document.getElementById('switchDbBtn');
+
+    const dbPanel = document.getElementById('dbPanel');
+    const dbList = document.getElementById('dbList');
+    const addGroupBtn = document.getElementById('addGroupBtn');
+    const closePanelBtn = document.getElementById('closePanelBtn');
+
+    const addModalMask = document.getElementById('addModalMask');
+    const groupNameInput = document.getElementById('groupNameInput');
+    const questionsInput = document.getElementById('questionsInput');
+    const cancelAddBtn = document.getElementById('cancelAddBtn');
+    const saveAddBtn = document.getElementById('saveAddBtn');
+
+    const viewModalMask = document.getElementById('viewModalMask');
+    const viewModalTitle = document.getElementById('viewModalTitle');
+    const viewQuestionsList = document.getElementById('viewQuestionsList');
+    const closeViewBtn = document.getElementById('closeViewBtn');
+
+    // ============ 数据与状态 ============
+    let mode = 'truth';
+    let databases = [];
+    let currentDbIndex = 0;
+    let questions = [];
+    let initialSubmode = null;
+
+    let deck = [];
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+    function resetDeck() { deck = [...questions]; shuffle(deck); }
+    function playFade(el) { el.classList.remove('fadeIn'); void el.offsetWidth; el.classList.add('fadeIn'); }
+
+    // URL 参数
+    function getUrlParams() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('mode')) mode = String(params.get('mode') || '').toLowerCase();
+      if (params.has('submode')) initialSubmode = params.get('submode');
+      if (mode !== 'truth' && mode !== 'dare') mode = 'truth';
+    }
+    getUrlParams();
+
+    // 模式文案
+    function getModeLabels() {
+      if (mode === 'dare') {
+        return {
+          title: '大冒险',
+          btnStart: '来个挑战吧',
+          hintIdle: '今晚来点刺激的挑战吧…',
+          hintReady: '准备好了，点击“来个挑战吧”开始抽题！',
+          btnMore: '再来一个挑战',
+          btnNewRound: '新一轮挑战'
+        };
+      }
       return {
-        title: '大冒险',
-        btnStart: '来个挑战吧',
-        hintIdle: '今晚来点刺激的挑战吧…',
-        hintReady: '准备好了，点击“来个挑战吧”开始抽题！',
-        btnMore: '再来一个挑战',
-        btnNewRound: '新一轮挑战'
+        title: '真心话',
+        btnStart: '说出真心话',
+        hintIdle: '今晚该你揭开一点秘密了…',
+        hintReady: '准备好了，点击“说出真心话”开始抽题！',
+        btnMore: '再来一个真心',
+        btnNewRound: '新一轮真心'
       };
     }
-    return {
-      title: '真心话',
-      btnStart: '说出真心话',
-      hintIdle: '今晚该你揭开一点秘密了…',
-      hintReady: '准备好了，点击“说出真心话”开始抽题！',
-      btnMore: '再来一个真心',
-      btnNewRound: '新一轮真心'
-    };
-  }
 
-  // 应用主题与标题/文案
-  function applyThemeAndTitle() {
-    const body = document.body;
-    const L = getModeLabels();
-    if (mode === 'dare') {
-      body.classList.add('theme-dare');
-      body.classList.remove('theme-truth');
-    } else {
-      body.classList.add('theme-truth');
-      body.classList.remove('theme-dare');
+    // 应用主题与标题/文案
+    function applyThemeAndTitle() {
+      const body = document.body;
+      const L = getModeLabels();
+      if (mode === 'dare') {
+        body.classList.add('theme-dare');
+        body.classList.remove('theme-truth');
+      } else {
+        body.classList.add('theme-truth');
+        body.classList.remove('theme-dare');
+      }
+      pageTitle.textContent = L.title;
+      document.title = L.title;
+      drawBtn.textContent = L.btnStart;
+      questionDiv.textContent = L.hintIdle;
     }
-    pageTitle.textContent = L.title;
-    document.title = L.title;
-    // 初始按钮与提示
-    drawBtn.textContent = L.btnStart;
-    questionDiv.textContent = L.hintIdle;
-  }
-  applyThemeAndTitle();
+    applyThemeAndTitle();
 
-  // 渲染数据库面板
-  function renderDbList() {
-    dbList.innerHTML = '';
-    databases.forEach((name, idx) => {
-      const li = document.createElement('li');
-      li.className = 'dbPanel-item';
-      li.innerHTML = `
-        <span class="dbPanel-name" data-name="${name}" data-idx="${idx}">
+    // 渲染数据库面板
+    function renderDbList() {
+      dbList.innerHTML = '';
+      databases.forEach((name, idx) => {
+        const li = document.createElement('li');
+        li.className = 'dbPanel-item';
+        li.innerHTML = `
+        <span class="dbPanel-name" data-name="${name}" data-idx="${idx}" title="切换到此题组">
           <span>${name}</span>
           ${idx === currentDbIndex ? '<span class="badge">当前</span>' : ''}
         </span>
         <span class="row-actions">
+          <button class="btn btn-secondary btn-view" data-name="${name}">查看</button>
           <button class="btn btn-danger btn-del" data-name="${name}">删除</button>
         </span>
       `;
-      dbList.appendChild(li);
-    });
-  }
-
-  function toggleDbPanel(open) {
-    const willOpen = typeof open === 'boolean' ? open : !dbPanel.classList.contains('open');
-    if (willOpen) {
-      dbPanel.classList.add('open');
-      dbPanel.setAttribute('aria-hidden', 'false');
-      renderDbList();
-    } else {
-      dbPanel.classList.remove('open');
-      dbPanel.setAttribute('aria-hidden', 'true');
+        dbList.appendChild(li);
+      });
     }
-  }
 
-  // 加载组列表
-  async function loadDatabases() {
-    const L = getModeLabels();
-    try {
-      const snapshot = await db.ref(`/${mode}`).once('value');
-      const val = snapshot.val();
-      if (!val) {
-        databases = [];
-        questionDiv.textContent = '题库为空';
-        drawBtn.disabled = true;
-        return;
-      }
-      databases = Object.keys(val);
-      if (!databases.length) {
-        questionDiv.textContent = '题库为空';
-        drawBtn.disabled = true;
-        return;
-      }
-      if (initialSubmode) {
-        const idx = databases.indexOf(initialSubmode);
-        currentDbIndex = idx >= 0 ? idx : 0;
+    function toggleDbPanel(open) {
+      const willOpen = typeof open === 'boolean' ? open : !dbPanel.classList.contains('open');
+      if (willOpen) {
+        dbPanel.classList.add('open');
+        dbPanel.setAttribute('aria-hidden', 'false');
+        renderDbList();
       } else {
-        currentDbIndex = 0;
+        dbPanel.classList.remove('open');
+        dbPanel.setAttribute('aria-hidden', 'true');
       }
-      await loadQuestions();
-      drawBtn.disabled = false;
-      // 按模式设置启动按钮文本
-      drawBtn.textContent = L.btnStart;
-    } catch (error) {
-      console.error(error);
-      questionDiv.textContent = '加载数据失败';
-      drawBtn.disabled = true;
     }
-  }
 
-  // 加载题目（兼容对象/数组）
-  async function loadQuestions() {
-    const L = getModeLabels();
-    const dbName = databases[currentDbIndex];
-    questionDiv.textContent = '加载中…';
-    drawBtn.disabled = true;
-    try {
-      const snapshot = await db.ref(`/${mode}/${dbName}`).once('value');
-      const val = snapshot.val();
+    // 加载组列表
+    async function loadDatabases() {
+      const L = getModeLabels();
+      try {
+        const val = await dbGet(`/${mode}`);
+        if (!val) {
+          databases = [];
+          questionDiv.textContent = '题库为空';
+          drawBtn.disabled = true;
+          return;
+        }
+        databases = Object.keys(val);
+        if (!databases.length) {
+          questionDiv.textContent = '题库为空';
+          drawBtn.disabled = true;
+          return;
+        }
+        if (initialSubmode) {
+          const idx = databases.indexOf(initialSubmode);
+          currentDbIndex = idx >= 0 ? idx : 0;
+        } else {
+          currentDbIndex = 0;
+        }
+        await loadQuestions();
+        drawBtn.disabled = false;
+        drawBtn.textContent = L.btnStart;
+      } catch (error) {
+        console.error(error);
+        questionDiv.textContent = '加载数据失败';
+        drawBtn.disabled = true;
+      }
+    }
+
+    // 读取单个题组题目（对象/数组兼容）
+    async function loadGroupQuestions(groupName) {
+      const val = await dbGet(`/${mode}/${groupName}`);
       const list = val
         ? Array.isArray(val) ? val : Object.values(val)
         : [];
-      questions = list
+      return list
         .map(x => (typeof x === 'string' ? x.trim() : ''))
         .filter(Boolean);
+    }
 
-      if (!questions.length) {
-        questionDiv.textContent = `当前数据库 "${dbName}" 为空`;
-        drawBtn.disabled = true;
-      } else {
-        questionDiv.textContent = L.hintReady;
-        resetDeck();
-        drawBtn.disabled = false;
-        drawBtn.textContent = L.btnStart;
-      }
-    } catch (error) {
-      console.error(error);
-      questionDiv.textContent = '读取数据失败';
+    // 加载当前题组题目
+    async function loadQuestions() {
+      const L = getModeLabels();
+      const dbName = databases[currentDbIndex];
+      questionDiv.textContent = '加载中…';
       drawBtn.disabled = true;
-    }
-  }
-
-  // 抽题
-  async function draw() {
-    const L = getModeLabels();
-    if (!deck.length) resetDeck();
-    if (!deck.length) return;
-    drawBtn.disabled = true;
-
-    drawBtn.classList.add('animate-spinBlur');
-    questionDiv.style.opacity = '0';
-
-    await new Promise(res => setTimeout(res, 2500));
-
-    const q = deck.pop();
-    questionDiv.textContent = q;
-    playFade(questionDiv);
-    questionDiv.style.opacity = '1';
-
-    drawBtn.textContent = deck.length ? L.btnMore : L.btnNewRound;
-    drawBtn.classList.remove('animate-spinBlur');
-    drawBtn.disabled = false;
-  }
-
-  // 删除组
-  async function deleteGroup(name) {
-    if (!name) return;
-    const confirmed = confirm(`确定删除组 "${name}"？此操作不可撤销。`);
-    if (!confirmed) return;
-    try {
-      await db.ref(`/${mode}/${name}`).remove();
-      const idx = databases.indexOf(name);
-      if (idx >= 0) databases.splice(idx, 1);
-      if (!databases.length) {
-        currentDbIndex = 0; questions = []; deck = [];
-        questionDiv.textContent = '题库为空';
-        drawBtn.disabled = true;
-      } else {
-        if (idx === currentDbIndex) {
-          currentDbIndex = Math.min(idx, databases.length - 1);
-          await loadQuestions();
-        } else if (idx < currentDbIndex) {
-          currentDbIndex -= 1;
+      try {
+        const list = await loadGroupQuestions(dbName);
+        questions = list;
+        if (!questions.length) {
+          questionDiv.textContent = `当前数据库 "${dbName}" 为空`;
+          drawBtn.disabled = true;
+        } else {
+          questionDiv.textContent = L.hintReady;
+          resetDeck();
+          drawBtn.disabled = false;
+          drawBtn.textContent = L.btnStart;
         }
+      } catch (error) {
+        console.error(error);
+        questionDiv.textContent = '读取数据失败';
+        drawBtn.disabled = true;
       }
-      renderDbList();
-      alert('已删除');
-    } catch (e) {
-      console.error(e);
-      alert('删除失败，请稍后再试');
     }
-  }
 
-  // 解析题目输入（逗号或换行）
-  function parseQuestionsInput(raw) {
-    if (!raw) return [];
-    const parts = raw.replace(/，/g, ',').split(/[\n,]/);
-    return parts
-      .map(s => s.trim())
-      .map(s => s.replace(/^["“”']+|["“”']+$/g, ''))
-      .map(s => s.replace(/\s+/g, ' '))
-      .filter(Boolean);
-  }
+    // 抽题
+    async function draw() {
+      const L = getModeLabels();
+      if (!deck.length) resetDeck();
+      if (!deck.length) return;
+      drawBtn.disabled = true;
 
-  // 新增组
-  async function addGroup(name, items) {
-    await db.ref(`/${mode}/${name}`).set(items);
-  }
+      drawBtn.classList.add('animate-spinBlur');
+      questionDiv.style.opacity = '0';
 
-  // Modal 控制
-  function openAddModal() {
-    groupNameInput.value = '';
-    questionsInput.value = '';
-    addModalMask.classList.add('open');
-    setTimeout(() => groupNameInput.focus(), 0);
-  }
-  function closeAddModal() { addModalMask.classList.remove('open'); }
+      await new Promise(res => setTimeout(res, 2500));
 
-  // 事件
-  drawBtn.addEventListener('click', draw);
-  switchDbBtn.addEventListener('click', () => toggleDbPanel());
-  closePanelBtn.addEventListener('click', () => toggleDbPanel(false));
+      const q = deck.pop();
+      questionDiv.textContent = q;
+      playFade(questionDiv);
+      questionDiv.style.opacity = '1';
 
-  dbList.addEventListener('click', async (e) => {
-    const delBtn = e.target.closest('.btn-del');
-    const nameEl = e.target.closest('.dbPanel-name');
-
-    if (delBtn) {
-      const name = delBtn.getAttribute('data-name');
-      await deleteGroup(name);
-      return;
+      drawBtn.textContent = deck.length ? L.btnMore : L.btnNewRound;
+      drawBtn.classList.remove('animate-spinBlur');
+      drawBtn.disabled = false;
     }
-    if (nameEl) {
-      const name = nameEl.getAttribute('data-name');
-      const idx = databases.indexOf(name);
-      if (idx >= 0 && idx !== currentDbIndex) {
-        currentDbIndex = idx;
+
+    // 删除组
+    async function deleteGroup(name) {
+      if (!name) return;
+      const confirmed = confirm(`确定删除组 "${name}"？此操作不可撤销。`);
+      if (!confirmed) return;
+      try {
+        await dbRemove(`/${mode}/${name}`);
+        const idx = databases.indexOf(name);
+        if (idx >= 0) databases.splice(idx, 1);
+        if (!databases.length) {
+          currentDbIndex = 0; questions = []; deck = [];
+          questionDiv.textContent = '题库为空';
+          drawBtn.disabled = true;
+        } else {
+          if (idx === currentDbIndex) {
+            currentDbIndex = Math.min(idx, databases.length - 1);
+            await loadQuestions();
+          } else if (idx < currentDbIndex) {
+            currentDbIndex -= 1;
+          }
+        }
+        renderDbList();
+        alert('已删除');
+      } catch (e) {
+        console.error(e);
+        alert('删除失败，请稍后再试');
+      }
+    }
+
+    // 解析题目输入（逗号或换行）
+    function parseQuestionsInput(raw) {
+      if (!raw) return [];
+      const parts = raw.replace(/，/g, ',').split(/[\n,]/);
+      return parts
+        .map(s => s.trim())
+        .map(s => s.replace(/^["“”']+|["“”']+$/g, ''))
+        .map(s => s.replace(/\s+/g, ' '))
+        .filter(Boolean);
+    }
+
+    // 新增组
+    async function addGroup(name, items) {
+      await dbSet(`/${mode}/${name}`, items);
+    }
+
+    // 查看组 Modal 控制
+    function openViewModal(groupName, items) {
+      viewModalTitle.textContent = `题组：${groupName}（共 ${items.length} 题）`;
+      viewQuestionsList.innerHTML = '';
+      const frag = document.createDocumentFragment();
+      items.forEach((q) => {
+        const li = document.createElement('li');
+        li.textContent = q;
+        frag.appendChild(li);
+      });
+      viewQuestionsList.appendChild(frag);
+      viewModalMask.classList.add('open');
+    }
+    function closeViewModal() { viewModalMask.classList.remove('open'); }
+
+    // 新增组 Modal 控制
+    function openAddModal() {
+      groupNameInput.value = '';
+      questionsInput.value = '';
+      addModalMask.classList.add('open');
+      setTimeout(() => groupNameInput.focus(), 0);
+    }
+    function closeAddModal() { addModalMask.classList.remove('open'); }
+
+    // 事件
+    drawBtn.addEventListener('click', draw);
+    switchDbBtn.addEventListener('click', () => toggleDbPanel());
+    closePanelBtn.addEventListener('click', () => toggleDbPanel(false));
+
+    dbList.addEventListener('click', async (e) => {
+      const delBtn = e.target.closest('.btn-del');
+      const viewBtn = e.target.closest('.btn-view');
+      const nameEl = e.target.closest('.dbPanel-name');
+
+      if (delBtn) {
+        const name = delBtn.getAttribute('data-name');
+        await deleteGroup(name);
+        return;
+      }
+      if (viewBtn) {
+        const name = viewBtn.getAttribute('data-name');
+        try {
+          const items = await loadGroupQuestions(name);
+          if (!items.length) {
+            alert('该题组暂无题目');
+          } else {
+            openViewModal(name, items);
+          }
+        } catch (err) {
+          console.error(err);
+          alert('加载题目失败');
+        }
+        return;
+      }
+      if (nameEl) {
+        const name = nameEl.getAttribute('data-name');
+        const idx = databases.indexOf(name);
+        if (idx >= 0 && idx !== currentDbIndex) {
+          currentDbIndex = idx;
+          await loadQuestions();
+          renderDbList();
+        }
+        toggleDbPanel(false);
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!dbPanel.contains(e.target) && e.target !== switchDbBtn) {
+        toggleDbPanel(false);
+      }
+      if (viewModalMask.classList.contains('open')) {
+        const modal = viewModalMask.querySelector('.modal');
+        if (!modal.contains(e.target)) closeViewModal();
+      }
+      if (addModalMask.classList.contains('open')) {
+        const modal = addModalMask.querySelector('.modal');
+        if (!modal.contains(e.target)) closeAddModal();
+      }
+    });
+
+    addGroupBtn.addEventListener('click', () => openAddModal());
+    cancelAddBtn.addEventListener('click', () => closeAddModal());
+    closeViewBtn.addEventListener('click', () => closeViewModal());
+
+    saveAddBtn.addEventListener('click', async () => {
+      const nameRaw = groupNameInput.value.trim();
+      const name = nameRaw;
+      const valid = /^[A-Za-z0-9_\-]+$/.test(name);
+      if (!name) { alert('组名不能为空'); return; }
+      if (!valid) { alert('组名仅限字母、数字、下划线、中划线'); return; }
+      if (databases.includes(name)) { alert('已存在同名组，请更换名称'); return; }
+
+      const items = parseQuestionsInput(questionsInput.value);
+      if (!items.length) { alert('请至少输入 1 条题目'); return; }
+
+      try {
+        await addGroup(name, items);
+        databases.push(name);
+        currentDbIndex = databases.indexOf(name);
         await loadQuestions();
         renderDbList();
+        closeAddModal();
+        toggleDbPanel(false);
+        alert('新增成功');
+      } catch (e) {
+        console.error(e);
+        alert('新增失败，请稍后再试');
       }
-      toggleDbPanel(false);
-    }
-  });
+    });
 
-  document.addEventListener('click', (e) => {
-    if (!dbPanel.contains(e.target) && e.target !== switchDbBtn) {
-      toggleDbPanel(false);
-    }
-  });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (viewModalMask.classList.contains('open')) closeViewModal();
+        else if (addModalMask.classList.contains('open')) closeAddModal();
+        else toggleDbPanel(false);
+      }
+    });
 
-  addGroupBtn.addEventListener('click', () => openAddModal());
-  cancelAddBtn.addEventListener('click', () => closeAddModal());
-
-  saveAddBtn.addEventListener('click', async () => {
-    const nameRaw = groupNameInput.value.trim();
-    const name = nameRaw;
-    const valid = /^[A-Za-z0-9_\-]+$/.test(name);
-    if (!name) { alert('组名不能为空'); return; }
-    if (!valid) { alert('组名仅限字母、数字、下划线、中划线'); return; }
-    if (databases.includes(name)) { alert('已存在同名组，请更换名称'); return; }
-
-    const items = parseQuestionsInput(questionsInput.value);
-    if (!items.length) { alert('请至少输入 1 条题目'); return; }
-
-    try {
-      await addGroup(name, items);
-      databases.push(name);
-      currentDbIndex = databases.indexOf(name);
-      await loadQuestions();
-      renderDbList();
-      closeAddModal();
-      toggleDbPanel(false);
-      alert('新增成功');
-    } catch (e) {
-      console.error(e);
-      alert('新增失败，请稍后再试');
-    }
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      if (addModalMask.classList.contains('open')) closeAddModal();
-      else toggleDbPanel(false);
-    }
-  });
-
-  // 启动
-  loadDatabases();
-</script>
+    // 启动
+    loadDatabases();
+  </script>
 </body>
+
 </html>
+```

@@ -148,7 +148,7 @@
       position: absolute;
       top: 40px;
       right: 10px;
-      width: 320px;
+      width: 360px;
       max-height: 60vh;
       overflow: auto;
       background: var(--panel-bg);
@@ -214,6 +214,15 @@
       background: rgba(64, 191, 128, 0.28);
     }
 
+    .btn-secondary {
+      background: rgba(111, 168, 255, 0.14);
+      border-color: rgba(111, 168, 255, 0.35);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(111, 168, 255, 0.24);
+    }
+
     .dbPanel-list {
       list-style: none;
       margin: 0;
@@ -258,7 +267,8 @@
     }
 
     /* 新增组 Modal */
-    #addModalMask {
+    #addModalMask,
+    #viewModalMask {
       position: fixed;
       inset: 0;
       background: rgba(0, 0, 0, 0.45);
@@ -268,12 +278,13 @@
       z-index: 30;
     }
 
-    #addModalMask.open {
+    #addModalMask.open,
+    #viewModalMask.open {
       display: flex;
     }
 
     .modal {
-      width: min(92vw, 520px);
+      width: min(92vw, 560px);
       background: #101726;
       border: 1px solid rgba(255 255 255 / 0.2);
       border-radius: 14px;
@@ -325,6 +336,30 @@
       display: flex;
       justify-content: flex-end;
       gap: 10px;
+    }
+
+    /* 查看组 Modal 专用 */
+    .questions-scroll {
+      max-height: min(60vh, 520px);
+      overflow: auto;
+      padding: 8px 4px 0;
+      border-top: 1px dashed rgba(255 255 255 / 0.12);
+      margin-top: 8px;
+    }
+
+    .questions-scroll ol {
+      margin: 0;
+      padding-left: 1.25rem;
+    }
+
+    .questions-scroll li {
+      padding: 6px 0;
+      border-bottom: 1px dashed rgba(255 255 255 / 0.06);
+      line-height: 1.5;
+    }
+
+    .questions-scroll li:last-child {
+      border-bottom: none;
     }
 
     /* 动画 */
@@ -415,58 +450,166 @@
     </div>
   </div>
 
-  <script>
-    // ========== 本地数据模式（替代 Firebase） ==========
-    // 数据结构与原 Realtime Database 保持一致：
-    // { truth: { groupName: [ "题目", ... ] }, dare: { groupName: [ ... ] } }
-    const STORE_KEY = 'tod_local_store_v1';
+  <!-- 查看组 Modal -->
+  <div id="viewModalMask" role="dialog" aria-modal="true" aria-labelledby="viewModalTitle">
+    <div class="modal">
+      <h3 id="viewModalTitle">题组</h3>
+      <div class="questions-scroll">
+        <ol id="viewQuestionsList"></ol>
+      </div>
+      <div class="actions">
+        <button id="closeViewBtn" class="btn">关闭</button>
+      </div>
+    </div>
+  </div>
 
-    const DEFAULT_STORE = {
+  <!-- Firebase SDK（如使用本地模式，可将下面两行注释掉） -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <script>
+    // ============ 模式切换 ============
+    // 将下行改为 false，或将上方两条 Firebase SDK <script> 注释掉，即可切换到本地模式（使用 localStorage）
+    const USE_FIREBASE = false;
+
+    // ============ Firebase 配置（云端模式） ============
+    const firebaseConfig = {
+      apiKey: "AIzaSyAu6RnEXYMRsJP3Q8EISNyQRPtbGLDYwkk",
+      authDomain: "truth-or-dare-b4b2a.firebaseapp.com",
+      databaseURL: "https://truth-or-dare-b4b2a-default-rtdb.firebaseio.com",
+      projectId: "truth-or-dare-b4b2a",
+      storageBucket: "truth-or-dare-b4b2a.firebasestorage.app",
+      messagingSenderId: "643326186626",
+      appId: "1:643326186626:web:861df5ec9c5ca8e669d09b",
+      measurementId: "G-5TXR8Y8BSR"
+    };
+
+    // ============ 数据层封装（自动适配本地/云端） ============
+    const isFirebaseAvailable = typeof firebase !== 'undefined';
+    const isFirebaseMode = USE_FIREBASE && isFirebaseAvailable;
+
+    // 本地数据结构示例（可修改）
+    const LOCAL_STORAGE_KEY = 'tod_local_db_v1';
+    const defaultLocalDB = {
       truth: {
         classic: [
-          "第一次见到我时，你的第一印象是什么？",
-          "有什么想说却一直没开口的话？",
-          "你心里最柔软的地方，藏着谁或什么？",
-          "你做过最幼稚却至今不后悔的一件事？",
-          "你最害怕在关系里失去的是什么？",
-          "说一件你以为我不知道、可你希望我知道的事。",
-          "最近一次认真心动是什么时候？",
-          "你更需要被理解，还是被迁就？为什么？"
+          "你最近一次心动是什么时候？",
+          "你最不想被问到的问题是什么？为什么？",
+          "你做过最冲动的一件事？",
+          "你害怕失去什么？"
         ],
-        whisper: [
-          "闭上眼，你此刻最想听我说的一句话是什么？",
-          "你为谁改过一个小习惯？结果如何？",
-          "哪首歌像极了你现在的心情？为什么？",
-          "如果我们是一部电影，你觉得现在处在哪个章节？",
-          "你希望我更懂你的哪一面？",
-          "你心里反复提到的那个名字，现在还会响吗？",
-          "你最抗拒提起的回忆是什么？",
-          "请形容我此刻给你的感觉，用三个词。"
+        soft: [
+          "今天最想对我说的一句话？",
+          "你心里的小确幸是什么？"
+        ],
+        love: [
+          "你最喜欢在什么情况下被我完全主导？",
+          "你有没有幻想过自己像一只小狗一样，被我调教和支配？",
+          "你愿意为我戴上项圈和牵引绳，让我牵着你走吗？",
+          "你最想被我用什么样的方式惩罚？",
+          "你觉得我在什么样的角色扮演中最能激起你的服从欲？",
+          "你有没有特别想被我绑住，然后做一些事情？",
+          "你愿意为我描述你对“疼痛与快乐”最狂野的幻想吗？",
+          "你希望我用什么样的语气、什么样的言语来命令你？",
+          "你有没有因为我某个强势的举动而感到特别兴奋？",
+          "你愿意为我讲述一个你最渴望被“控制”的亲密场景吗？",
+          "你希望我用手、鞭子还是其他道具来轻拍你的身体？",
+          "你有没有因为我某个霸道的眼神而感到全身发软？",
+          "你最想在什么样的情境下，对我完全地屈服？",
+          "你愿意为我描述一下，当你和我亲密时，你最喜欢我做什么？",
+          "你有没有一个隐藏的愿望，但觉得有点幼稚或者不切实际，所以一直没说出口？",
+          "你最想亲吻我身体的哪个地方？",
+          "你现在最想对我做什么？",
+          "我身上哪个特质最能激发你的欲望？",
+          "你最想在车里和我做的一件“坏事”是什么？",
+          "你最希望我此刻以何种方式抚摸你？",
+          "你现在最想听我对你说一句什么样的话？",
+          "你有没有偷偷幻想过我们在这个场景下能做些什么？",
+          "我此刻的哪个动作最能激发你的欲望？",
+          "你现在最想和我玩一个什么样的“情趣游戏”？",
+          "在这个私密的空间里，你最想探索我身体的哪个部位？",
+          "你有没有因为我此刻的某个眼神而感到心跳加速？",
+          "你最想和我一起实现的一个“情趣”小目标是什么？",
+          "你有没有一个此刻突然冒出的疯狂念头？",
+          "我此刻的哪个声音最让你感到兴奋？",
+          "你最想让我为你做一件什么样的浪漫或性感的事情？",
+          "你有没有特别想过我此刻穿什么样子，或者在什么场合下最吸引你？",
+          "你最喜欢什么时候，在什么地方亲吻我？",
+          "你最喜欢的亲密姿势是什么？",
+          "你有没有特别的癖好或者幻想，但又不好意思告诉我？",
+          "你最喜欢我身体的哪个部位，为什么？",
+          "你有没有幻想过我们之间的一些亲密场景？",
+          "如果我们可以尝试一种新的亲密方式，你最想尝试什么？",
+          "你最希望我以何种方式抚摸你？",
+          "你最想和我一起做的一件“坏事”是什么？",
+          "你最希望我们之间能有更多什么样的亲密互动？",
+          "你有没有偷偷幻想过我们一起做一些“不合时宜”的事情？",
+          "你觉得我们之间最能激发你欲望的场景是什么？",
+          "哪一部电影或者书，最能让你感到兴奋？",
+          "你最想和我一起实现的一个小目标是什么？",
+          "你觉得我身上哪一点最能让你感到兴奋？",
+          "你有没有因为我的某个小动作而感到特别性感？"
         ]
       },
       dare: {
-        gentle: [
-          "和我对视不说话 15 秒。",
-          "把手机亮度调低，对我说一句只属于今晚的话。",
-          "用你喜欢的方式让我笑一次。",
-          "选一首歌，和我共享 30 秒。",
-          "闭眼伸手，让我带你走 10 步。",
-          "把今天最真诚的一句夸奖送给我。",
-          "把你的小秘密写在便签里，折好交给我保管。",
-          "把你的手交给我，静静数 20 个呼吸。"
+        classic: [
+          "用表情演一个 5 秒内心戏",
+          "闭眼描述我现在的样子 10 秒",
+          "让对方指定一个口头禅并坚持 3 分钟"
         ],
-        wild: [
-          "用三句话把我撩到脸红。",
-          "用不超过 10 个字，定义我们现在的关系。",
-          "用你最拿手的方式贴近我 5 秒。",
-          "把我当成你的镜子，说出此刻你最真实的样子。",
-          "给我一个你风格的“信号”，不解释。",
-          "在不说“喜欢”的情况下，表达“喜欢”。",
-          "把我的名字和一个愿望写在同一句话里。",
-          "闭眼描述我身上的一个细节，越具体越好。"
+        love: [
+          "骑在对方的胸膛上，轻轻地打Ta的耳光，直到Ta求饶。",
+          "跪在对方面前，喊Ta“主人”并亲吻Ta的脚趾。",
+          "像投喂小狗一样，将零食喂给对方。",
+          "用嘴喂饮料，将饮料含在自己嘴里，然后吐到对方嘴里。",
+          "用手和嘴唇探索对方的身体，直到Ta发出声音。",
+          "把对方的双手绑起来，然后用你的手掌轻拍Ta的屁股。",
+          "让对方戴上眼罩，然后用冰块或羽毛等东西轻抚Ta的身体，让Ta猜是什么。",
+          "用你手中的丝巾或领带，蒙上对方的眼睛，然后主导接下来的十分钟。",
+          "让对方躺在地上，你坐在Ta的腰上，然后用你的腿夹住Ta的脖子。",
+          "让对方跪在地上，你坐在Ta的背上，然后用你的脚轻轻踢Ta的屁股。",
+          "骑在对方的脖子上，让Ta像马一样带着你走一圈。",
+          "坐在对方的脸上，用你的身体去摩擦Ta的脸。",
+          "用你的身体去摩擦对方的身体，直到Ta发出声音。",
+          "蒙上我的眼睛，然后用你的手和嘴唇探索我的脸。",
+          "在我的大腿上，用你的双腿夹住我，直到我求饶为止。",
+          "用你的嘴唇在我的身体上留下一个吻痕。",
+          "在不碰触我的情况下，用眼神和我玩一场“情趣游戏”。",
+          "给我一个“爱的拥抱”，持续一分钟。",
+          "告诉我你最喜欢我的什么，用你的身体语言表达出来。",
+          "在我的手心上用手指写出你最爱我的一点。",
+          "亲吻对方的脖子，并用嘴唇留下一个印记。",
+          "用舌头探索对方的耳垂，并轻咬一下。",
+          "亲吻对方的胸膛，直到Ta感到心跳加速。",
+          "用双手抚摸对方的背部，直到Ta感到全身放松。",
+          "吻对方的额头，并说出你爱Ta的原因。",
+          "用嘴唇沿着对方的手臂一路向上，直到肩膀。",
+          "亲吻对方的脚，并赞美Ta的优点。",
+          "朝对方的耳朵轻轻哈气，并说一句情话。",
+          "亲吻对方的屁股，并用手轻拍一下。",
+          "用你的鼻子摩擦对方的脸颊，直到Ta感到心痒。",
+          "亲吻对方的大腿根部，并用手指轻抚。",
+          "用你的双腿夹住对方的脖子，直到Ta求饶。",
+          "用你的身体，在对方身上写下你爱Ta的一句话。",
+          "用你的声音，在Ta耳边轻声说一些让你兴奋的话。",
+          "在Ta的嘴唇上轻轻咬一下，并说出你对Ta的欲望。",
+          "用手指在Ta的锁骨上写下你爱Ta的名字。",
+          "用你的膝盖，轻轻顶住对方的大腿内侧。",
+          "亲吻对方的腹部，并用手指在Ta身上画圈。",
+          "用你的脚趾，轻轻抚摸Ta的脚底。",
+          "在Ta的背上，用嘴唇画一个心形。",
+          "打一下对方的屁股，并用言语挑逗Ta。",
+          "打一下对方的脸，但必须是轻柔的。",
+          "假装我们是陌生人，在房间里重新认识对方。",
+          "拿出手机，互相在对方的手机上，为自己设置一个“爱称”。",
+          "用手或脚在对方的身上画画，让Ta猜是什么。",
+          "互相为对方做一次“爱的按摩”，从头到脚。",
+          "用手或脚在对方的身上画画，让Ta猜是什么。",
+          "互相为对方做一次“爱的按摩”，从头到脚。",
+          "假装我们是陌生人，在房间里重新认识对方。",
+          "拿出手机，互相在对方的手机上，为自己设置一个“爱称”。"
         ],
-        SlaveForMaster: [
-
+        sex_slave: [
           "跪下，从我的双腿之间慢慢爬过，不许抬头",
           "趴好，用舌尖细细清理我后方最隐蔽的缝隙",
           "把你的脸贴进我前方最柔软的花心，好好服侍",
@@ -519,30 +662,88 @@
         ]
       }
     };
+    let localDB = null;
 
-    function loadStore() {
+    function loadLocalDB() {
       try {
-        const raw = localStorage.getItem(STORE_KEY);
-        if (!raw) return clone(DEFAULT_STORE);
-        const data = JSON.parse(raw);
-        // 简单容错：缺什么补什么
-        if (!data.truth) data.truth = {};
-        if (!data.dare) data.dare = {};
-        return data;
-      } catch (_) {
-        return clone(DEFAULT_STORE);
+        const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+        localDB = raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(defaultLocalDB));
+      } catch {
+        localDB = JSON.parse(JSON.stringify(defaultLocalDB));
+      }
+    }
+    function saveLocalDB() {
+      try { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localDB)); } catch { }
+    }
+    function getByPath(obj, path) {
+      // path like "/truth", "/truth/classic"
+      const parts = path.replace(/^\/+/, '').split('/').filter(Boolean);
+      let cur = obj;
+      for (const p of parts) {
+        if (cur == null) return null;
+        cur = cur[p];
+      }
+      return cur ?? null;
+    }
+    function setByPath(obj, path, value) {
+      const parts = path.replace(/^\/+/, '').split('/').filter(Boolean);
+      let cur = obj;
+      for (let i = 0; i < parts.length - 1; i++) {
+        const p = parts[i];
+        if (typeof cur[p] !== 'object' || cur[p] === null) cur[p] = {};
+        cur = cur[p];
+      }
+      cur[parts[parts.length - 1]] = value;
+    }
+    function removeByPath(obj, path) {
+      const parts = path.replace(/^\/+/, '').split('/').filter(Boolean);
+      let cur = obj;
+      for (let i = 0; i < parts.length - 1; i++) {
+        const p = parts[i];
+        if (typeof cur[p] !== 'object' || cur[p] === null) return;
+        cur = cur[p];
+      }
+      delete cur[parts[parts.length - 1]];
+    }
+
+    // 统一 API
+    async function dbGet(path) {
+      if (isFirebaseMode) {
+        const snap = await firebase.database().ref(path).once('value');
+        return snap.val();
+      } else {
+        if (!localDB) loadLocalDB();
+        return getByPath(localDB, path);
+      }
+    }
+    async function dbSet(path, value) {
+      if (isFirebaseMode) {
+        await firebase.database().ref(path).set(value);
+      } else {
+        if (!localDB) loadLocalDB();
+        setByPath(localDB, path, value);
+        saveLocalDB();
+      }
+    }
+    async function dbRemove(path) {
+      if (isFirebaseMode) {
+        await firebase.database().ref(path).remove();
+      } else {
+        if (!localDB) loadLocalDB();
+        removeByPath(localDB, path);
+        saveLocalDB();
       }
     }
 
-    function saveStore(data) {
-      localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    // 若启用 Firebase，则初始化
+    if (isFirebaseMode) {
+      firebase.initializeApp(firebaseConfig);
+    } else {
+      // 本地模式：提前加载一次数据
+      loadLocalDB();
     }
 
-    function clone(obj) {
-      return JSON.parse(JSON.stringify(obj));
-    }
-
-    // ========== 原逻辑保留（仅将 Firebase 调用替换为本地读写） ==========
+    // ============ 元素 ============
     const pageTitle = document.getElementById('pageTitle');
     const questionDiv = document.getElementById('question');
     const drawBtn = document.getElementById('drawBtn');
@@ -559,14 +760,18 @@
     const cancelAddBtn = document.getElementById('cancelAddBtn');
     const saveAddBtn = document.getElementById('saveAddBtn');
 
-    let store = loadStore();
+    const viewModalMask = document.getElementById('viewModalMask');
+    const viewModalTitle = document.getElementById('viewModalTitle');
+    const viewQuestionsList = document.getElementById('viewQuestionsList');
+    const closeViewBtn = document.getElementById('closeViewBtn');
 
-    // 数据
+    // ============ 数据与状态 ============
     let mode = 'truth';
     let databases = [];
     let currentDbIndex = 0;
     let questions = [];
     let initialSubmode = null;
+
     let deck = [];
 
     function shuffle(arr) {
@@ -634,11 +839,12 @@
         const li = document.createElement('li');
         li.className = 'dbPanel-item';
         li.innerHTML = `
-        <span class="dbPanel-name" data-name="${name}" data-idx="${idx}">
+        <span class="dbPanel-name" data-name="${name}" data-idx="${idx}" title="切换到此题组">
           <span>${name}</span>
           ${idx === currentDbIndex ? '<span class="badge">当前</span>' : ''}
         </span>
         <span class="row-actions">
+          <button class="btn btn-secondary btn-view" data-name="${name}">查看</button>
           <button class="btn btn-danger btn-del" data-name="${name}">删除</button>
         </span>
       `;
@@ -658,12 +864,18 @@
       }
     }
 
-    // 读取当前模式的所有组名
+    // 加载组列表
     async function loadDatabases() {
       const L = getModeLabels();
       try {
-        const modeData = store[mode] || {};
-        databases = Object.keys(modeData);
+        const val = await dbGet(`/${mode}`);
+        if (!val) {
+          databases = [];
+          questionDiv.textContent = '题库为空';
+          drawBtn.disabled = true;
+          return;
+        }
+        databases = Object.keys(val);
         if (!databases.length) {
           questionDiv.textContent = '题库为空';
           drawBtn.disabled = true;
@@ -685,20 +897,26 @@
       }
     }
 
-    // 读取当前组的问题列表
+    // 读取单个题组题目（对象/数组兼容）
+    async function loadGroupQuestions(groupName) {
+      const val = await dbGet(`/${mode}/${groupName}`);
+      const list = val
+        ? Array.isArray(val) ? val : Object.values(val)
+        : [];
+      return list
+        .map(x => (typeof x === 'string' ? x.trim() : ''))
+        .filter(Boolean);
+    }
+
+    // 加载当前题组题目
     async function loadQuestions() {
       const L = getModeLabels();
       const dbName = databases[currentDbIndex];
       questionDiv.textContent = '加载中…';
       drawBtn.disabled = true;
       try {
-        const modeData = store[mode] || {};
-        const val = modeData[dbName];
-        const list = Array.isArray(val) ? val : [];
-        questions = list
-          .map(x => (typeof x === 'string' ? x.trim() : ''))
-          .filter(Boolean);
-
+        const list = await loadGroupQuestions(dbName);
+        questions = list;
         if (!questions.length) {
           questionDiv.textContent = `当前数据库 "${dbName}" 为空`;
           drawBtn.disabled = true;
@@ -737,19 +955,15 @@
       drawBtn.disabled = false;
     }
 
-    // 删除组（当前模式下）
+    // 删除组
     async function deleteGroup(name) {
       if (!name) return;
       const confirmed = confirm(`确定删除组 "${name}"？此操作不可撤销。`);
       if (!confirmed) return;
       try {
-        if (!store[mode]) store[mode] = {};
-        delete store[mode][name];
-        saveStore(store);
-
+        await dbRemove(`/${mode}/${name}`);
         const idx = databases.indexOf(name);
         if (idx >= 0) databases.splice(idx, 1);
-
         if (!databases.length) {
           currentDbIndex = 0; questions = []; deck = [];
           questionDiv.textContent = '题库为空';
@@ -781,14 +995,27 @@
         .filter(Boolean);
     }
 
-    // 新增组（当前模式下）
+    // 新增组
     async function addGroup(name, items) {
-      if (!store[mode]) store[mode] = {};
-      store[mode][name] = items;
-      saveStore(store);
+      await dbSet(`/${mode}/${name}`, items);
     }
 
-    // Modal 控制
+    // 查看组 Modal 控制
+    function openViewModal(groupName, items) {
+      viewModalTitle.textContent = `题组：${groupName}（共 ${items.length} 题）`;
+      viewQuestionsList.innerHTML = '';
+      const frag = document.createDocumentFragment();
+      items.forEach((q) => {
+        const li = document.createElement('li');
+        li.textContent = q;
+        frag.appendChild(li);
+      });
+      viewQuestionsList.appendChild(frag);
+      viewModalMask.classList.add('open');
+    }
+    function closeViewModal() { viewModalMask.classList.remove('open'); }
+
+    // 新增组 Modal 控制
     function openAddModal() {
       groupNameInput.value = '';
       questionsInput.value = '';
@@ -804,11 +1031,27 @@
 
     dbList.addEventListener('click', async (e) => {
       const delBtn = e.target.closest('.btn-del');
+      const viewBtn = e.target.closest('.btn-view');
       const nameEl = e.target.closest('.dbPanel-name');
 
       if (delBtn) {
         const name = delBtn.getAttribute('data-name');
         await deleteGroup(name);
+        return;
+      }
+      if (viewBtn) {
+        const name = viewBtn.getAttribute('data-name');
+        try {
+          const items = await loadGroupQuestions(name);
+          if (!items.length) {
+            alert('该题组暂无题目');
+          } else {
+            openViewModal(name, items);
+          }
+        } catch (err) {
+          console.error(err);
+          alert('加载题目失败');
+        }
         return;
       }
       if (nameEl) {
@@ -827,10 +1070,19 @@
       if (!dbPanel.contains(e.target) && e.target !== switchDbBtn) {
         toggleDbPanel(false);
       }
+      if (viewModalMask.classList.contains('open')) {
+        const modal = viewModalMask.querySelector('.modal');
+        if (!modal.contains(e.target)) closeViewModal();
+      }
+      if (addModalMask.classList.contains('open')) {
+        const modal = addModalMask.querySelector('.modal');
+        if (!modal.contains(e.target)) closeAddModal();
+      }
     });
 
     addGroupBtn.addEventListener('click', () => openAddModal());
     cancelAddBtn.addEventListener('click', () => closeAddModal());
+    closeViewBtn.addEventListener('click', () => closeViewModal());
 
     saveAddBtn.addEventListener('click', async () => {
       const nameRaw = groupNameInput.value.trim();
@@ -860,7 +1112,8 @@
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        if (addModalMask.classList.contains('open')) closeAddModal();
+        if (viewModalMask.classList.contains('open')) closeViewModal();
+        else if (addModalMask.classList.contains('open')) closeAddModal();
         else toggleDbPanel(false);
       }
     });
@@ -871,3 +1124,4 @@
 </body>
 
 </html>
+```
