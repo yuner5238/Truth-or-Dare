@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>命运空间 · Fate</title>
+  <meta name="color-scheme" content="dark" />
+  <style>
+    :root{
+      --bg-0: #0a0b10;
+      --bg-1: #0b0e18;
+      --ink: #EDEFF6;
+      --ink-dim: #BFC6D9;
+      --card-border: rgba(255,255,255,0.08);
+      --glow: 255, 185, 245;
+      --accent: #C77DFF;
+      --accent-2: #7DE1FF;
+    }
+
+    *{ box-sizing: border-box; }
+    html, body{
+      height: 100%;
+      margin: 0;
+      color: var(--ink);
+      font-family: ui-serif, Georgia, "Songti SC", "Noto Serif CJK SC", serif;
+      background:
+        radial-gradient(1200px 800px at 20% 10%, rgba(255,255,255,0.04), transparent 60%),
+        radial-gradient(1200px 800px at 80% 90%, rgba(255,255,255,0.03), transparent 60%),
+        linear-gradient(135deg, var(--bg-0), var(--bg-1) 40%, var(--bg-1) 60%, var(--bg-0));
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow: hidden;
+    }
+
+    /* App 主体：加载期完全隐藏，揭幕后渐显 */
+    #app{ opacity: 0; visibility: hidden; transition: opacity 640ms ease; }
+    .app-ready #app{ opacity: 1; visibility: visible; }
+
+    /* 帷幕：实心基底 + 雾彩层 + 勾引文案（完全遮挡） */
+    .veil{
+      position: fixed; inset: 0; z-index: 1000; pointer-events: none;
+    }
+    .veil__base{
+      position: absolute; inset: 0;
+      background: #05060c radial-gradient(90% 90% at 50% 50%, #0b0d15 0%, #070910 55%, #05060c 100%);
+      opacity: 1; transition: opacity 1200ms ease;
+    }
+    .veil__fog{
+      position: absolute; inset: -8%;
+      display: grid; place-items: center; overflow: hidden;
+    }
+    .fog{
+      position: absolute; width: 74vw; height: 170vh; filter: blur(38px) saturate(120%);
+      opacity: .98;
+      background:
+        radial-gradient(42% 60% at 30% 30%, rgba(255,115,156,0.30), transparent 62%),
+        radial-gradient(42% 60% at 70% 70%, rgba(107,154,255,0.28), transparent 62%);
+    }
+    .fog.l{ transform: translate3d(-8%, 6%, 0) rotate(-26deg); }
+    .fog.r{
+      transform: translate3d(8%, -6%, 0) rotate(26deg);
+      background:
+        radial-gradient(42% 60% at 70% 30%, rgba(107,154,255,0.30), transparent 62%),
+        radial-gradient(42% 60% at 30% 70%, rgba(143,255,221,0.26), transparent 62%);
+    }
+
+    .tease{
+      position: absolute; left: 50%; top: 58%; transform: translate(-50%,-50%) translateY(8px);
+      padding: 14px 22px; text-align: center;
+      font-size: clamp(18px, 3.2vw, 28px); letter-spacing: .06em;
+      filter: drop-shadow(0 2px 10px rgba(0,0,0,.35)); opacity: 0;
+      animation: teaseIn 1000ms ease 400ms forwards;
+      pointer-events: none; white-space: nowrap;
+    }
+    .tease .shimmer{
+      background: linear-gradient(90deg,
+        rgba(255,255,255,0.9),
+        rgba(199,125,255,0.95) 45%,
+        rgba(125,225,255,0.95) 70%,
+        rgba(255,255,255,0.88) 95%) no-repeat;
+      background-size: 200% 100%;
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      animation: shimmer 3.6s ease-in-out infinite;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.25);
+    }
+    .tease::after{
+      content:""; display:block; height: 1px; width: 0%;
+      margin: 10px auto 0;
+      background: linear-gradient(90deg, rgba(199,125,255,0.7), rgba(125,225,255,0.7));
+      border-radius: 1px; opacity: .9;
+      animation: underline 1100ms ease 800ms forwards;
+    }
+    @keyframes teaseIn{ to{ opacity:1; transform: translate(-50%,-50%) translateY(0) } }
+    @keyframes shimmer{ 0%,100%{ background-position: 0% 50% } 50%{ background-position: 100% 50% } }
+    @keyframes underline{ to{ width: 64% } }
+
+    /* 散雾序列（更长）：左右掀开 + 基底淡出（结束后彻底移除） */
+    .veil.disperse .fog.l{ animation: disperseL 1800ms ease forwards; }
+    .veil.disperse .fog.r{ animation: disperseR 1800ms ease forwards; }
+    .veil.disperse .tease{ animation: teaseOut 800ms ease forwards; }
+    .veil.disperse .veil__base{ opacity: 0; }
+    @keyframes teaseOut{ to{ opacity:0; transform: translate(-50%,-50%) translateY(-8px) } }
+    @keyframes disperseL{
+      0% { opacity:.98; transform: translate3d(-8%,6%,0) rotate(-26deg) scale(1.02) }
+      100%{ opacity:0;  transform: translate3d(-60%,-24%,0) rotate(-30deg) scale(1.06) }
+    }
+    @keyframes disperseR{
+      0% { opacity:.98; transform: translate3d(8%,-6%,0) rotate(26deg) scale(1.02) }
+      100%{ opacity:0;  transform: translate3d(60%,24%,0) rotate(30deg) scale(1.06) }
+    }
+
+    /* 抽题：丝绸掠影（保留优雅神秘） */
+    .silk{
+      position: fixed; inset: 0; z-index: 900; pointer-events: none;
+      opacity: 0;
+    }
+    .silk.show{ animation: silkFade 1900ms ease forwards; }
+    @keyframes silkFade{
+      0%   { opacity: 0 }
+      12%  { opacity: .95 }
+      70%  { opacity: .9 }
+      100% { opacity: 0 }
+    }
+    .silk::before{
+      content:""; position: absolute; inset: -20%;
+      background:
+        radial-gradient(60% 40% at 20% 30%, rgba(199,125,255,0.20), transparent 65%),
+        radial-gradient(50% 35% at 80% 70%, rgba(125,225,255,0.18), transparent 65%),
+        radial-gradient(40% 25% at 50% 50%, rgba(255,255,255,0.06), transparent 70%);
+      filter: blur(18px) saturate(130%);
+      transform: translate3d(0,0,0);
+      animation: silkDrift 1900ms ease forwards;
+    }
+    @keyframes silkDrift{
+      0%   { transform: translate3d(0,0,0) scale(1) }
+      50%  { transform: translate3d(-2%,1.5%,0) scale(1.02) }
+      100% { transform: translate3d(3%,-1%,0) scale(1.04) }
+    }
+    .silk::after{
+      content:""; position: absolute; inset: -10%;
+      background:
+        conic-gradient(from 200deg at 45% 55%,
+          rgba(255,255,255,0) 0deg,
+          rgba(255,255,255,0.08) 20deg,
+          rgba(199,125,255,0.14) 32deg,
+          rgba(125,225,255,0.14) 44deg,
+          rgba(255,255,255,0.06) 58deg,
+          rgba(255,255,255,0) 80deg);
+      filter: blur(16px);
+      transform: rotate(-6deg) scale(1.02);
+      animation: crescent 1900ms cubic-bezier(.25,.85,.3,1) forwards;
+      mix-blend-mode: screen;
+    }
+    @keyframes crescent{
+      0%   { transform: translateX(-8%) rotate(-6deg) scale(1.02); opacity:.0 }
+      22%  { opacity:.9 }
+      60%  { transform: translateX(6%) rotate(-2deg) scale(1.04); opacity:.92 }
+      100% { transform: translateX(12%) rotate(0deg)  scale(1.05); opacity:.0 }
+    }
+
+    /* 返回（更隐蔽） */
+    .home{
+      position: fixed;
+      top: max(10px, env(safe-area-inset-top));
+      left: max(10px, env(safe-area-inset-left));
+      width: 34px; height: 34px; border-radius: 10px;
+      display: grid; place-items: center;
+      color: var(--ink);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.00));
+      border: 1px solid rgba(255,255,255,0.06);
+      text-decoration: none;
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+      transition: opacity .2s ease, transform .2s ease, border-color .2s ease;
+      z-index: 10; opacity: .18;
+    }
+    .home:hover{ opacity:.85; transform: translateY(-1px); border-color: rgba(255,255,255,0.18); }
+    .home .arrow{
+      width: 14px; height: 14px; display: inline-block;
+      border: 2px solid currentColor; border-right: none; border-top: none;
+      transform: rotate(45deg); opacity: .9;
+    }
+    .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+
+    /* 舞台与卡片 */
+    .stage{ position: relative; height: 100%; display: grid; place-items: center; padding: 12vh 5vw 18vh; }
+    .card{
+      position: relative; width: min(980px, 88vw); min-height: 180px;
+      padding: clamp(18px, 2.8vw, 36px) clamp(20px, 3.2vw, 48px);
+      border-radius: 24px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)) border-box,
+        linear-gradient(145deg, rgba(255,255,255,0.18), transparent 40%) border-box;
+      border: 1px solid var(--card-border);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.08),
+        0 30px 80px rgba(0,0,0,0.45),
+        0 20px 60px rgba(72, 28, 120, 0.25);
+      isolation: isolate; overflow: hidden;
+      transition: transform 320ms cubic-bezier(.2,.9,.25,1);
+    }
+    .card.glow{
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.08),
+        0 30px 80px rgba(0,0,0,0.45),
+        0 0 0 1px rgba(199,125,255,0.14),
+        0 0 50px rgba(199,125,255,0.22),
+        0 0 120px rgba(125,225,255,0.14);
+      transition: box-shadow 560ms ease;
+    }
+    .card.tremor{ animation: tremor 360ms cubic-bezier(.2,.9,.25,1.1); }
+    @keyframes tremor{
+      0% { transform: translateX(0) }
+      20%{ transform: translateX(-1px) }
+      40%{ transform: translateX(1px) }
+      60%{ transform: translateX(-0.6px) }
+      80%{ transform: translateX(0.6px) }
+      100%{ transform: translateX(0) }
+    }
+
+    .q{
+      position: relative; font-size: clamp(20px, 3.4vw, 40px);
+      line-height: 1.38; letter-spacing: 0.02em; color: var(--ink);
+      text-wrap: balance; text-shadow: 0 1px 0 rgba(0,0,0,0.35), 0 10px 30px rgba(0,0,0,0.25);
+      min-height: 2.8em; display: flex; align-items: center;
+      transition: filter .3s ease, opacity .3s ease;
+    }
+    .q.dim{ color: var(--ink-dim); filter: blur(1px); opacity: .9; }
+    .q.obscured{ filter: blur(6px); opacity: .2; }
+
+    /* 底部符印按钮 */
+    .sigil-wrap{
+      position: fixed; left: 50%;
+      bottom: max(24px, calc(env(safe-area-inset-bottom) + 16px));
+      transform: translateX(-50%); z-index: 9; display: grid; place-items: center;
+    }
+    .sigil{
+      --size: clamp(64px, 9.5vw, 92px);
+      width: var(--size); height: var(--size);
+      border-radius: 999px; border: 1px solid rgba(255,255,255,0.12);
+      background:
+        radial-gradient(60% 60% at 50% 40%, rgba(255,255,255,0.12), rgba(255,255,255,0.02)),
+        linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 6px 30px rgba(0,0,0,0.45), inset 0 8px 18px rgba(255,255,255,0.06);
+      display: grid; place-items: center; cursor: pointer;
+      transition: transform .2s ease, box-shadow .25s ease, background .3s ease;
+      position: relative; overflow: hidden;
+    }
+    .sigil::before{
+      content:""; position: absolute; inset: -40%;
+      background: radial-gradient(50% 50% at 50% 50%, rgba(var(--glow),0.14), transparent 60%);
+      filter: blur(40px); opacity: 0.6; animation: breathe 3.6s ease-in-out infinite;
+    }
+    @keyframes breathe{ 0%,100%{ transform: scale(1); opacity: .5 } 50%{ transform: scale(1.05); opacity: .8 } }
+    .sigil:hover{ transform: translateY(-2px); box-shadow: 0 10px 40px rgba(0,0,0,0.55), 0 0 24px rgba(199,125,255,0.18), 0 0 60px rgba(125,225,255,0.12); }
+    .sigil:active{ transform: translateY(0); }
+    .sigil svg{ width: 64%; height: 64%; display: block; }
+    .ring{ stroke-dasharray: 2 6; animation: ring 6s linear infinite; opacity: 0.85; transform-origin: 50 50; }
+    @keyframes ring{ to{ transform: rotate(360deg) } }
+    .sigil.loading{ animation: pulse 1.6s ease-in-out infinite; pointer-events: none; }
+    @keyframes pulse{
+      0%,100%{ box-shadow: 0 6px 30px rgba(0,0,0,0.45), 0 0 18px rgba(199,125,255,0.12), 0 0 48px rgba(125,225,255,0.08) }
+      50%{ box-shadow: 0 6px 30px rgba(0,0,0,0.45), 0 0 32px rgba(199,125,255,0.18), 0 0 80px rgba(125,225,255,0.12) }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      *{ animation: none !important; transition: none !important }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 帷幕：加载期完全遮挡 -->
+  <div class="veil" id="veil" aria-hidden="true">
+    <div class="veil__base"></div>
+    <div class="veil__fog">
+      <div class="fog l"></div>
+      <div class="fog r"></div>
+      <div class="tease">
+        <span class="shimmer">命运不催，只看你愿不愿被牵引。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 抽题“丝绸掠影” -->
+  <div class="silk" id="silk" aria-hidden="true"></div>
+
+  <!-- App 主体（加载时完全隐藏） -->
+  <div id="app">
+    <a class="home" href="index.html" aria-label="返回主页">
+      <i class="arrow" aria-hidden="true"></i>
+      <span class="sr-only">返回</span>
+    </a>
+
+    <main class="stage" aria-live="polite">
+      <article class="card" id="card">
+        <div class="q dim" id="q">若你愿与命运交换一息，它将赐你答案。</div>
+      </article>
+    </main>
+
+    <div class="sigil-wrap">
+      <button class="sigil" id="sigil" aria-label="抽取命运">
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#C77DFF"/>
+              <stop offset="100%" stop-color="#7DE1FF"/>
+            </linearGradient>
+          </defs>
+          <circle cx="50" cy="50" r="34" fill="none" stroke="url(#g)" stroke-width="1.5" class="ring"/>
+          <circle cx="50" cy="50" r="26" fill="none" stroke="url(#g)" stroke-width="0.8" opacity="0.55"/>
+          <path d="M50 28 L56 50 L50 72 L44 50 Z" fill="none" stroke="url(#g)" stroke-width="0.8" opacity="0.45"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script type="module">
+    // —— Firebase —— //
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAu6RnEXYMRsJP3Q8EISNyQRPtbGLDYwkk",
+      authDomain: "truth-or-dare-b4b2a.firebaseapp.com",
+      databaseURL: "https://truth-or-dare-b4b2a-default-rtdb.firebaseio.com",
+      projectId: "truth-or-dare-b4b2a",
+      storageBucket: "truth-or-dare-b4b2a.firebasestorage.app",
+      messagingSenderId: "643326186626",
+      appId: "1:643326186626:web:861df5ec9c5ca8e669d09b",
+      measurementId: "G-5TXR8Y8BSR"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    try { getAnalytics(app); } catch {}
+    const db = getDatabase(app);
+
+    // —— DOM —— //
+    const $ = (s, p=document) => p.querySelector(s);
+    const veil = $('#veil');
+    const silk = $('#silk');
+    const qEl = $('#q');
+    const cardEl = $('#card');
+    const sigilEl = $('#sigil');
+
+    // —— 工具 —— //
+    const vibe = (pattern) => { try{ navigator.vibrate && navigator.vibrate(pattern); }catch{} };
+    const randIndex = (len) => {
+      if (crypto?.getRandomValues) { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % len; }
+      return Math.floor(Math.random()*len);
+    };
+    const glyphs = "卍✶✧◦◯◬◩◇◆▷◈▵▿※*•·~^˙˖";
+
+    function revealText(el, finalText, duration = 1600){
+      const start = performance.now();
+      const chars = [...finalText];
+      const blank = chars.map(ch => (/\s/.test(ch) ? " " : ""));
+      const tick = (t) => {
+        const p = Math.min(1, (t - start) / duration);
+        const count = Math.floor(p * chars.length);
+        let out = "";
+        for (let i=0; i<chars.length; i++){
+          if (i < count) out += chars[i];
+          else out += (blank[i] === " " ? " " : glyphs[randIndex(glyphs.length)]);
+        }
+        el.textContent = out;
+        el.style.filter = `blur(${(1-p)*3}px)`;
+        el.style.opacity = String(0.8 + 0.2*p);
+        if (p < 1) requestAnimationFrame(tick);
+        else { el.textContent = finalText; el.style.filter = 'blur(0px)'; el.style.opacity = '1'; }
+      };
+      requestAnimationFrame(tick);
+    }
+
+    // —— 数据 —— //
+    async function fetchCategory(path){
+      const snap = await get(ref(db, path));
+      if (!snap.exists()) return [];
+      const val = snap.val();
+      if (Array.isArray(val)) return val.filter(Boolean).map(s => String(s).trim()).filter(Boolean);
+      const out = [];
+      for (const k of Object.keys(val || {})){
+        const node = val[k];
+        if (Array.isArray(node)) out.push(...node);
+        else if (node && typeof node === 'object'){
+          for (const kk of Object.keys(node)) if (Array.isArray(node[kk])) out.push(...node[kk]);
+        }
+      }
+      return out.map(s => String(s).trim()).filter(Boolean);
+    }
+
+    async function loadData(){
+      const [truth, dare] = await Promise.all([ fetchCategory('/truth'), fetchCategory('/dare') ]);
+      const truthU = [...new Set(truth)];
+      const dareU = [...new Set(dare)];
+      return { truth: truthU, dare: dareU, all: [...new Set([...truthU, ...dareU])] };
+    }
+
+    // —— 揭幕时序（时长拉长）：不泄露 → 平滑揭开 → 干净收场 —— //
+    let DATA = { truth: [], dare: [], all: [] };
+    const mode = new URLSearchParams(location.search).get('mode')?.toLowerCase();
+    const MODE = (mode === 'truth' || mode === 'dare') ? mode : 'all';
+
+    const dataReady = (async () => {
+      try { DATA = await loadData(); }
+      catch(e){ console.warn('数据加载失败：', e); }
+    })();
+
+    (async () => {
+      // 可调参数：加载撩拨时长（建议 1.6–2.2s），最大等待（建议 3.6–4.2s）
+      const minWait = new Promise(res => setTimeout(res, 1600));  // 撩拨停顿
+      const maxWait = new Promise(res => setTimeout(res, 3600));  // 上限控制
+      await minWait;
+      await Promise.race([dataReady, maxWait]);
+
+      // 散雾：左右掀开 + 基底淡出
+      veil.classList.add('disperse');
+
+      // 预热微光（仍被帷幕遮挡）
+      setTimeout(()=> {
+        cardEl.classList.add('glow');
+        setTimeout(()=> cardEl.classList.remove('glow'), 1100);
+      }, 520);
+
+      // 收场：彻底移除雾层，显露清晰内容，并移除任何朦胧
+      setTimeout(() => {
+        veil.remove();
+        document.documentElement.classList.add('app-ready');
+        qEl.classList.remove('dim'); // 去掉朦胧文本，避免“还在加载”的错觉
+      }, 1850); // 与 disperse 动画 1.8s 对齐，确保雾完全消失
+    })();
+
+    // —— 使用记录（避免重复） —— //
+    function storageKey(m){ return `fate.used.${m}`; }
+    function getUsed(m){
+      try { return new Set(JSON.parse(sessionStorage.getItem(storageKey(m)) || "[]")); }
+      catch { return new Set(); }
+    }
+    function setUsed(m, s){ sessionStorage.setItem(storageKey(m), JSON.stringify([...s])); }
+
+    function pickFromPool(){
+      const pool = DATA[MODE] || [];
+      if (!pool.length) return null;
+      const used = getUsed(MODE);
+      if (used.size >= pool.length - 1){ setUsed(MODE, new Set()); used.clear(); }
+      const candidates = pool.filter(x => !used.has(x));
+      const choice = (candidates.length ? candidates : pool)[randIndex(candidates.length || pool.length)];
+      used.add(choice); setUsed(MODE, used);
+      return choice;
+    }
+
+    // —— 抽题：丝绸掠影 + 轻震 + 渐现文本 —— //
+    const DRAW_MS = 1900;
+
+    function runSilk(){
+      silk.classList.remove('show'); void silk.offsetWidth;
+      silk.classList.add('show');
+      silk.setAttribute('aria-hidden', 'false');
+      setTimeout(() => {
+        silk.classList.remove('show');
+        silk.setAttribute('aria-hidden', 'true');
+      }, DRAW_MS);
+    }
+
+    function draw(){
+      const choice = pickFromPool();
+      if (!choice){
+        qEl.textContent = '题库还没就位，稍后再触碰我。';
+        return;
+      }
+      sigilEl.classList.add('loading');
+      qEl.classList.add('obscured');
+      try{ navigator.vibrate && navigator.vibrate([18, 90, 18]); }catch{}
+
+      runSilk();
+
+      setTimeout(() => {
+        try{ navigator.vibrate && navigator.vibrate([1, 45, 26, 50, 10]); }catch{}
+        cardEl.classList.remove('tremor','glow'); void cardEl.offsetWidth;
+        cardEl.classList.add('tremor','glow');
+        revealText(qEl, choice, 1500);
+        qEl.classList.remove('obscured');
+        setTimeout(()=> sigilEl.classList.remove('loading'), 480);
+      }, DRAW_MS - 400);
+    }
+
+    sigilEl.addEventListener('click', draw, { passive: true });
+
+    // 双击屏幕也可触发
+    let lastTap = 0;
+    window.addEventListener('touchend', () => {
+      const now = Date.now();
+      if (now - lastTap < 360) draw();
+      lastTap = now;
+    }, { passive: true });
+
+    // 数据失败的温柔降级
+    dataReady.finally(() => {
+      if (!(DATA[MODE] && DATA[MODE].length)) {
+        qEl.textContent = '题库似乎还在路上，点符印再试一次。';
+        qEl.classList.remove('dim'); // 失败时也保证清晰
+      }
+    });
+  </script>
+</body>
+</html>
