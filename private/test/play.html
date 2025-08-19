@@ -145,8 +145,11 @@
     #dbPanel {
       position: absolute;
       top: 40px;
-      right: 10px;
-      width: 360px;
+      /* right: 10px; */
+      width: 92vw;
+      /* 默认宽度改为视口宽度的92% */
+      max-width: 360px;
+      /* 最大不超过360px（保留原桌面效果） */
       max-height: 60vh;
       overflow: auto;
       background: var(--panel-bg);
@@ -155,6 +158,10 @@
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
       display: none;
       z-index: 20;
+      left: 50%;
+      transform: translateX(-50%);
+      right: auto;
+
     }
 
     #dbPanel.open {
