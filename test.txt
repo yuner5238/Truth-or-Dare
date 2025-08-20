@@ -1,9 +1,10 @@
+</htm
 <!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-width=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>抽题</title>
   <style>
     * {
@@ -117,50 +118,57 @@
       box-shadow: 0 8px 22px var(--accent-shadow);
     }
 
-    /* 更隐蔽：数据库按钮 */
     #switchDbBtn {
       position: absolute;
       top: 8px;
       right: 10px;
       background: transparent;
       border: none;
-      color: rgba(255, 255, 255, 0.35);
-      font-size: 0.85rem;
-      padding: 4px 6px;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 0.9rem;
+      padding: 6px 8px;
       cursor: pointer;
       user-select: none;
-      opacity: 0.35;
       transition: opacity 0.2s ease, color 0.2s ease, transform 0.1s ease;
     }
 
     #switchDbBtn:hover {
-      opacity: 0.8;
-      color: rgba(255, 255, 255, 0.75);
+      opacity: 0.9;
+      color: rgba(255, 255, 255, 0.95);
     }
 
     #switchDbBtn:focus {
       outline: none;
-      opacity: 0.8;
+      opacity: 0.9;
     }
 
-    /* 数据库面板 */
+    /* ===== 数据库面板改为居中弹窗（含遮罩） ===== */
+    #dbPanelMask {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+      padding: 12px;
+    }
+
+    #dbPanelMask.open {
+      display: flex;
+    }
+
     #dbPanel {
-      position: absolute;
-      top: 40px;
-      right: 10px;
-      width: 360px;
-      max-height: 60vh;
-      overflow: auto;
+      position: relative;
+      width: min(92vw, 560px);
+      max-height: min(70vh, 640px);
+      overflow: hidden;
       background: var(--panel-bg);
       border: 1px solid rgba(255 255 255 / 0.2);
       border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-      display: none;
-      z-index: 20;
-    }
-
-    #dbPanel.open {
-      display: block;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+      display: flex;
+      flex-direction: column;
     }
 
     .dbPanel-header {
@@ -180,6 +188,7 @@
     .dbPanel-actions {
       display: flex;
       gap: 8px;
+      flex-wrap: wrap;
     }
 
     .btn {
@@ -227,6 +236,8 @@
       list-style: none;
       margin: 0;
       padding: 6px 8px 10px;
+      overflow: auto;
+      max-height: calc(min(70vh, 640px) - 56px);
     }
 
     .dbPanel-item {
@@ -250,6 +261,10 @@
       color: #eaeaea;
       cursor: pointer;
       user-select: none;
+      max-width: 70%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .dbPanel-name .badge {
@@ -264,9 +279,10 @@
     .dbPanel-item .row-actions {
       display: inline-flex;
       gap: 6px;
+      flex-shrink: 0;
     }
 
-    /* 新增组 Modal */
+    /* 其它两个弹窗（新增/查看） */
     #addModalMask,
     #viewModalMask {
       position: fixed;
@@ -275,7 +291,8 @@
       display: none;
       align-items: center;
       justify-content: center;
-      z-index: 30;
+      z-index: 50;
+      padding: 12px;
     }
 
     #addModalMask.open,
@@ -291,6 +308,8 @@
       box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
       padding: 16px;
       color: #eaeaea;
+      max-height: 80vh;
+      overflow: auto;
     }
 
     .modal h3 {
@@ -338,7 +357,6 @@
       gap: 10px;
     }
 
-    /* 查看组 Modal 专用 */
     .questions-scroll {
       max-height: min(60vh, 520px);
       overflow: auto;
@@ -362,7 +380,6 @@
       border-bottom: none;
     }
 
-    /* 动画 */
     @keyframes spinBlur {
       0% {
         filter: blur(0);
@@ -405,6 +422,68 @@
     .fadeIn {
       animation: fadeInOpacity 0.6s ease forwards;
     }
+
+    /* 遮罩层 */
+    #dbPanelMask,
+    #addModalMask,
+    #viewModalMask {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+      padding: 12px;
+      overflow: hidden;
+    }
+
+    /* 打开时显示 */
+    #dbPanelMask.open,
+    #addModalMask.open,
+    #viewModalMask.open {
+      display: flex;
+      animation: fadeInMask 0.25s ease;
+    }
+
+    /* 弹窗滑入动画 */
+    @keyframes slideUpModal {
+      from {
+        transform: translateY(40px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    /* 遮罩淡入 */
+    @keyframes fadeInMask {
+      from {
+        background: rgba(0, 0, 0, 0);
+      }
+
+      to {
+        background: rgba(0, 0, 0, 0.45);
+      }
+    }
+
+    /* 弹窗本体 */
+    #dbPanel,
+    .modal {
+      animation: slideUpModal 0.28s ease;
+    }
+
+    /* 保证移动端不会溢出 */
+    #dbPanel,
+    .modal {
+      width: min(92vw, 560px);
+      max-height: min(80vh, 640px);
+      overflow: hidden;
+      border-radius: 12px;
+    }
   </style>
 </head>
 
@@ -412,18 +491,20 @@
   <header id="pageTitle">抽题</header>
 
   <div id="container">
-    <!-- 更隐蔽的按钮：低不透明度的小字按钮 -->
     <button id="switchDbBtn" title="题库">数据库</button>
 
-    <div id="dbPanel" aria-hidden="true">
-      <div class="dbPanel-header">
-        <div class="dbPanel-title">题库组</div>
-        <div class="dbPanel-actions">
-          <button id="addGroupBtn" class="btn btn-primary">新增组</button>
-          <button id="closePanelBtn" class="btn">关闭</button>
+    <!-- 数据库弹窗（带遮罩，居中显示） -->
+    <div id="dbPanelMask" role="dialog" aria-modal="true" aria-labelledby="dbPanelTitle" aria-hidden="true">
+      <div id="dbPanel">
+        <div class="dbPanel-header">
+          <div class="dbPanel-title" id="dbPanelTitle">题库组</div>
+          <div class="dbPanel-actions">
+            <button id="addGroupBtn" class="btn btn-primary">新增组</button>
+            <button id="closePanelBtn" class="btn">关闭</button>
+          </div>
         </div>
+        <ul id="dbList" class="dbPanel-list"></ul>
       </div>
-      <ul id="dbList" class="dbPanel-list"></ul>
     </div>
 
     <div id="question">加载中…</div>
@@ -431,7 +512,7 @@
   </div>
 
   <!-- 新增组 Modal -->
-  <div id="addModalMask" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
+  <div id="addModalMask" role="dialog" aria-modal="true" aria-labelledby="addModalTitle" aria-hidden="true">
     <div class="modal">
       <h3 id="addModalTitle">新增题库组</h3>
       <div class="form-row">
@@ -451,7 +532,7 @@
   </div>
 
   <!-- 查看组 Modal -->
-  <div id="viewModalMask" role="dialog" aria-modal="true" aria-labelledby="viewModalTitle">
+  <div id="viewModalMask" role="dialog" aria-modal="true" aria-labelledby="viewModalTitle" aria-hidden="true">
     <div class="modal">
       <h3 id="viewModalTitle">题组</h3>
       <div class="questions-scroll">
@@ -463,16 +544,14 @@
     </div>
   </div>
 
-  <!-- Firebase SDK（如使用本地模式，可将下面两行注释掉） -->
+  <!-- 数据源切换：通过注释/取消注释来切换 -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <!-- <script> const USE_FIREBASE = true; </script> -->
+  <script> const USE_FIREBASE = false; </script>
 
   <script>
-    // ============ 模式切换 ============
-    // 将下行改为 false，或将上方两条 Firebase SDK <script> 注释掉，即可切换到本地模式（使用 localStorage）
-    const USE_FIREBASE = true;
-
-    // ============ Firebase 配置（云端模式） ============
+    // ============ Firebase 配置（如切到云端再用） ============
     const firebaseConfig = {
       apiKey: "AIzaSyAu6RnEXYMRsJP3Q8EISNyQRPtbGLDYwkk",
       authDomain: "truth-or-dare-b4b2a.firebaseapp.com",
@@ -484,12 +563,11 @@
       measurementId: "G-5TXR8Y8BSR"
     };
 
-    // ============ 数据层封装（自动适配本地/云端） ============
+    // ============ 数据层（本地 JSON / Firebase） ============
     const isFirebaseAvailable = typeof firebase !== 'undefined';
     const isFirebaseMode = USE_FIREBASE && isFirebaseAvailable;
 
-    // 本地数据结构示例（可修改）
-    const LOCAL_STORAGE_KEY = 'tod_local_db_v1';
+    // 默认内置数据（兜底）
     const defaultLocalDB = {
       truth: {
         classic: [
@@ -511,21 +589,36 @@
         ]
       }
     };
+
     let localDB = null;
 
-    function loadLocalDB() {
+    // 读取本地 JSON，并合并默认数据补齐缺失（不覆盖已有组）
+    async function loadLocalDBFromFile() {
+      if (localDB) return localDB;
       try {
-        const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-        localDB = raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(defaultLocalDB));
-      } catch {
-        localDB = JSON.parse(JSON.stringify(defaultLocalDB));
+        const res = await fetch('./truth_or_dare.json', { cache: 'no-cache' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+
+        localDB = {
+          truth: (json && typeof json.truth === 'object' && !Array.isArray(json.truth)) ? json.truth : {},
+          dare: (json && typeof json.dare === 'object' && !Array.isArray(json.dare)) ? json.dare : {},
+        };
+
+        // 合并默认数据（缺组时补齐）
+        localDB.truth = { ...(defaultLocalDB.truth || {}), ...(localDB.truth || {}) };
+        localDB.dare = { ...(defaultLocalDB.dare || {}), ...(localDB.dare || {}) };
+      } catch (err) {
+        console.warn('读取 truth_or_dare.json 失败，使用内置默认题库', err);
+        localDB = {
+          truth: { ...defaultLocalDB.truth },
+          dare: { ...defaultLocalDB.dare }
+        };
       }
+      return localDB;
     }
-    function saveLocalDB() {
-      try { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localDB)); } catch { }
-    }
+
     function getByPath(obj, path) {
-      // path like "/truth", "/truth/classic"
       const parts = path.replace(/^\/+/, '').split('/').filter(Boolean);
       let cur = obj;
       for (const p of parts) {
@@ -555,13 +648,14 @@
       delete cur[parts[parts.length - 1]];
     }
 
-    // 统一 API
     async function dbGet(path) {
       if (isFirebaseMode) {
         const snap = await firebase.database().ref(path).once('value');
         return snap.val();
       } else {
-        if (!localDB) loadLocalDB();
+        await loadLocalDBFromFile();
+        if (path === '/truth') return localDB.truth;
+        if (path === '/dare') return localDB.dare;
         return getByPath(localDB, path);
       }
     }
@@ -569,27 +663,23 @@
       if (isFirebaseMode) {
         await firebase.database().ref(path).set(value);
       } else {
-        if (!localDB) loadLocalDB();
+        await loadLocalDBFromFile();
         setByPath(localDB, path, value);
-        saveLocalDB();
       }
     }
     async function dbRemove(path) {
       if (isFirebaseMode) {
         await firebase.database().ref(path).remove();
       } else {
-        if (!localDB) loadLocalDB();
+        await loadLocalDBFromFile();
         removeByPath(localDB, path);
-        saveLocalDB();
       }
     }
 
-    // 若启用 Firebase，则初始化
     if (isFirebaseMode) {
       firebase.initializeApp(firebaseConfig);
     } else {
-      // 本地模式：提前加载一次数据
-      loadLocalDB();
+      loadLocalDBFromFile(); // 预加载
     }
 
     // ============ 元素 ============
@@ -598,6 +688,7 @@
     const drawBtn = document.getElementById('drawBtn');
     const switchDbBtn = document.getElementById('switchDbBtn');
 
+    const dbPanelMask = document.getElementById('dbPanelMask');
     const dbPanel = document.getElementById('dbPanel');
     const dbList = document.getElementById('dbList');
     const addGroupBtn = document.getElementById('addGroupBtn');
@@ -632,7 +723,6 @@
     function resetDeck() { deck = [...questions]; shuffle(deck); }
     function playFade(el) { el.classList.remove('fadeIn'); void el.offsetWidth; el.classList.add('fadeIn'); }
 
-    // URL 参数
     function getUrlParams() {
       const params = new URLSearchParams(window.location.search);
       if (params.has('mode')) mode = String(params.get('mode') || '').toLowerCase();
@@ -641,7 +731,6 @@
     }
     getUrlParams();
 
-    // 模式文案
     function getModeLabels() {
       if (mode === 'dare') {
         return {
@@ -663,7 +752,6 @@
       };
     }
 
-    // 应用主题与标题/文案
     function applyThemeAndTitle() {
       const body = document.body;
       const L = getModeLabels();
@@ -681,50 +769,51 @@
     }
     applyThemeAndTitle();
 
-    // 渲染数据库面板
     function renderDbList() {
       dbList.innerHTML = '';
+      const frag = document.createDocumentFragment();
       databases.forEach((name, idx) => {
         const li = document.createElement('li');
         li.className = 'dbPanel-item';
         li.innerHTML = `
-        <span class="dbPanel-name" data-name="${name}" data-idx="${idx}" title="切换到此题组">
-          <span>${name}</span>
-          ${idx === currentDbIndex ? '<span class="badge">当前</span>' : ''}
-        </span>
-        <span class="row-actions">
-          <button class="btn btn-secondary btn-view" data-name="${name}">查看</button>
-          <button class="btn btn-danger btn-del" data-name="${name}">删除</button>
-        </span>
-      `;
-        dbList.appendChild(li);
+          <span class="dbPanel-name" data-name="${name}" data-idx="${idx}" title="切换到此题组">
+            <span>${name}</span>
+            ${idx === currentDbIndex ? '<span class="badge">当前</span>' : ''}
+          </span>
+          <span class="row-actions">
+            <button class="btn btn-secondary btn-view" data-name="${name}">查看</button>
+            <button class="btn btn-danger btn-del" data-name="${name}">删除</button>
+          </span>
+        `;
+        frag.appendChild(li);
       });
+      dbList.appendChild(frag);
     }
 
     function toggleDbPanel(open) {
-      const willOpen = typeof open === 'boolean' ? open : !dbPanel.classList.contains('open');
+      const willOpen = typeof open === 'boolean' ? open : !dbPanelMask.classList.contains('open');
       if (willOpen) {
-        dbPanel.classList.add('open');
-        dbPanel.setAttribute('aria-hidden', 'false');
+        dbPanelMask.classList.add('open');
+        dbPanelMask.setAttribute('aria-hidden', 'false');
         renderDbList();
       } else {
-        dbPanel.classList.remove('open');
-        dbPanel.setAttribute('aria-hidden', 'true');
+        dbPanelMask.classList.remove('open');
+        dbPanelMask.setAttribute('aria-hidden', 'true');
       }
     }
 
-    // 加载组列表
+    // 组列表
     async function loadDatabases() {
       const L = getModeLabels();
       try {
-        const val = await dbGet(`/${mode}`);
-        if (!val) {
+        const groupsObj = await dbGet(`/${mode}`);
+        if (!groupsObj || typeof groupsObj !== 'object') {
           databases = [];
           questionDiv.textContent = '题库为空';
           drawBtn.disabled = true;
           return;
         }
-        databases = Object.keys(val);
+        databases = Object.keys(groupsObj);
         if (!databases.length) {
           questionDiv.textContent = '题库为空';
           drawBtn.disabled = true;
@@ -746,13 +835,21 @@
       }
     }
 
-    // 读取单个题组题目（对象/数组兼容）
+    // 读取单个题组
     async function loadGroupQuestions(groupName) {
       const val = await dbGet(`/${mode}/${groupName}`);
-      const list = val
-        ? Array.isArray(val) ? val : Object.values(val)
-        : [];
-      return list
+      let list = [];
+      if (Array.isArray(val)) {
+        list = val;
+      } else if (val && typeof val === 'object') {
+        list = Object.values(val);
+      }
+      // 本地模式兜底
+      if ((!list || !list.length) && !isFirebaseMode) {
+        const fallback = defaultLocalDB[mode]?.[groupName];
+        if (Array.isArray(fallback)) list = fallback;
+      }
+      return (list || [])
         .map(x => (typeof x === 'string' ? x.trim() : ''))
         .filter(Boolean);
     }
@@ -826,14 +923,14 @@
           }
         }
         renderDbList();
-        alert('已删除');
+        alert(isFirebaseMode ? '已删除' : '已从内存中删除（刷新后不保留，需修改 truth_or_dare.json 持久化）');
       } catch (e) {
         console.error(e);
         alert('删除失败，请稍后再试');
       }
     }
 
-    // 解析题目输入（逗号或换行）
+    // 输入解析
     function parseQuestionsInput(raw) {
       if (!raw) return [];
       const parts = raw.replace(/，/g, ',').split(/[\n,]/);
@@ -849,7 +946,7 @@
       await dbSet(`/${mode}/${name}`, items);
     }
 
-    // 查看组 Modal 控制
+    // 查看组 Modal
     function openViewModal(groupName, items) {
       viewModalTitle.textContent = `题组：${groupName}（共 ${items.length} 题）`;
       viewQuestionsList.innerHTML = '';
@@ -861,22 +958,23 @@
       });
       viewQuestionsList.appendChild(frag);
       viewModalMask.classList.add('open');
+      viewModalMask.setAttribute('aria-hidden', 'false');
     }
-    function closeViewModal() { viewModalMask.classList.remove('open'); }
-
-    // 新增组 Modal 控制
-    function openAddModal() {
-      groupNameInput.value = '';
-      questionsInput.value = '';
-      addModalMask.classList.add('open');
-      setTimeout(() => groupNameInput.focus(), 0);
+    function closeViewModal() {
+      viewModalMask.classList.remove('open');
+      viewModalMask.setAttribute('aria-hidden', 'true');
     }
-    function closeAddModal() { addModalMask.classList.remove('open'); }
 
-    // 事件
+    // 事件绑定
     drawBtn.addEventListener('click', draw);
-    switchDbBtn.addEventListener('click', () => toggleDbPanel());
-    closePanelBtn.addEventListener('click', () => toggleDbPanel(false));
+    switchDbBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleDbPanel();
+    });
+    closePanelBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleDbPanel(false);
+    });
 
     dbList.addEventListener('click', async (e) => {
       const delBtn = e.target.closest('.btn-del');
@@ -884,18 +982,19 @@
       const nameEl = e.target.closest('.dbPanel-name');
 
       if (delBtn) {
+        e.stopPropagation();
         const name = delBtn.getAttribute('data-name');
         await deleteGroup(name);
         return;
       }
       if (viewBtn) {
+        e.stopPropagation();
         const name = viewBtn.getAttribute('data-name');
         try {
           const items = await loadGroupQuestions(name);
+          openViewModal(name, items);
           if (!items.length) {
-            alert('该题组暂无题目');
-          } else {
-            openViewModal(name, items);
+            setTimeout(() => alert('该题组暂无题目'), 0);
           }
         } catch (err) {
           console.error(err);
@@ -904,6 +1003,7 @@
         return;
       }
       if (nameEl) {
+        e.stopPropagation();
         const name = nameEl.getAttribute('data-name');
         const idx = databases.indexOf(name);
         if (idx >= 0 && idx !== currentDbIndex) {
@@ -916,24 +1016,47 @@
     });
 
     document.addEventListener('click', (e) => {
-      if (!dbPanel.contains(e.target) && e.target !== switchDbBtn) {
-        toggleDbPanel(false);
+      // 关闭数据库面板（点击遮罩关闭，点击内容不关闭）
+      if (dbPanelMask.classList.contains('open')) {
+        if (!dbPanel.contains(e.target) && e.target !== dbPanel && e.target !== switchDbBtn) {
+          toggleDbPanel(false);
+        }
       }
+      // 查看组弹窗：点击遮罩关闭，点击内容不关闭
       if (viewModalMask.classList.contains('open')) {
         const modal = viewModalMask.querySelector('.modal');
-        if (!modal.contains(e.target)) closeViewModal();
+        if (!modal.contains(e.target) && e.target !== modal) closeViewModal();
       }
+      // 新增组弹窗：点击遮罩关闭
       if (addModalMask.classList.contains('open')) {
         const modal = addModalMask.querySelector('.modal');
-        if (!modal.contains(e.target)) closeAddModal();
+        if (!modal.contains(e.target) && e.target !== modal) {
+          addModalMask.classList.remove('open');
+          addModalMask.setAttribute('aria-hidden', 'true');
+        }
       }
     });
 
-    addGroupBtn.addEventListener('click', () => openAddModal());
-    cancelAddBtn.addEventListener('click', () => closeAddModal());
-    closeViewBtn.addEventListener('click', () => closeViewModal());
+    addGroupBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      groupNameInput.value = '';
+      questionsInput.value = '';
+      addModalMask.classList.add('open');
+      addModalMask.setAttribute('aria-hidden', 'false');
+      setTimeout(() => groupNameInput.focus(), 0);
+    });
+    cancelAddBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      addModalMask.classList.remove('open');
+      addModalMask.setAttribute('aria-hidden', 'true');
+    });
+    closeViewBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeViewModal();
+    });
 
-    saveAddBtn.addEventListener('click', async () => {
+    saveAddBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
       const nameRaw = groupNameInput.value.trim();
       const name = nameRaw;
       const valid = /^[A-Za-z0-9_\-]+$/.test(name);
@@ -950,26 +1073,36 @@
         currentDbIndex = databases.indexOf(name);
         await loadQuestions();
         renderDbList();
-        closeAddModal();
+        addModalMask.classList.remove('open');
+        addModalMask.setAttribute('aria-hidden', 'true');
         toggleDbPanel(false);
-        alert('新增成功');
-      } catch (e) {
-        console.error(e);
+        alert(isFirebaseMode ? '新增成功' : '已添加到内存（刷新后不保留，需修改 truth_or_dare.json 持久化）');
+      } catch (e2) {
+        console.error(e2);
         alert('新增失败，请稍后再试');
       }
     });
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        if (viewModalMask.classList.contains('open')) closeViewModal();
-        else if (addModalMask.classList.contains('open')) closeAddModal();
-        else toggleDbPanel(false);
+        // Esc 关闭所有弹窗
+        if (dbPanelMask.classList.contains('open')) {
+          toggleDbPanel(false);
+        }
+        if (viewModalMask.classList.contains('open')) {
+          closeViewModal();
+        }
+        if (addModalMask.classList.contains('open')) {
+          addModalMask.classList.remove('open');
+          addModalMask.setAttribute('aria-hidden', 'true');
+        }
       }
     });
 
-    // 启动
+    // 初始化
     loadDatabases();
   </script>
 </body>
 
 </html>
+```

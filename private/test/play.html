@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-width=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>抽题</title>
   <style>
     * {
@@ -123,42 +123,51 @@
       right: 10px;
       background: transparent;
       border: none;
-      color: rgba(255, 255, 255, 0.35);
-      font-size: 0.85rem;
-      padding: 4px 6px;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 0.9rem;
+      padding: 6px 8px;
       cursor: pointer;
       user-select: none;
-      opacity: 0.35;
       transition: opacity 0.2s ease, color 0.2s ease, transform 0.1s ease;
     }
 
     #switchDbBtn:hover {
-      opacity: 0.8;
-      color: rgba(255, 255, 255, 0.75);
+      opacity: 0.9;
+      color: rgba(255, 255, 255, 0.95);
     }
 
     #switchDbBtn:focus {
       outline: none;
-      opacity: 0.8;
+      opacity: 0.9;
+    }
+
+    /* ===== 数据库面板改为居中弹窗（含遮罩） ===== */
+    #dbPanelMask {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+      padding: 12px;
+    }
+
+    #dbPanelMask.open {
+      display: flex;
     }
 
     #dbPanel {
-      position: absolute;
-      top: 40px;
-      right: 10px;
-      width: 360px;
-      max-height: 60vh;
-      overflow: auto;
+      position: relative;
+      width: min(92vw, 560px);
+      max-height: min(70vh, 640px);
+      overflow: hidden;
       background: var(--panel-bg);
       border: 1px solid rgba(255 255 255 / 0.2);
       border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-      display: none;
-      z-index: 20;
-    }
-
-    #dbPanel.open {
-      display: block;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+      display: flex;
+      flex-direction: column;
     }
 
     .dbPanel-header {
@@ -178,6 +187,7 @@
     .dbPanel-actions {
       display: flex;
       gap: 8px;
+      flex-wrap: wrap;
     }
 
     .btn {
@@ -225,6 +235,8 @@
       list-style: none;
       margin: 0;
       padding: 6px 8px 10px;
+      overflow: auto;
+      max-height: calc(min(70vh, 640px) - 56px);
     }
 
     .dbPanel-item {
@@ -248,6 +260,10 @@
       color: #eaeaea;
       cursor: pointer;
       user-select: none;
+      max-width: 70%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .dbPanel-name .badge {
@@ -262,8 +278,10 @@
     .dbPanel-item .row-actions {
       display: inline-flex;
       gap: 6px;
+      flex-shrink: 0;
     }
 
+    /* 其它两个弹窗（新增/查看） */
     #addModalMask,
     #viewModalMask {
       position: fixed;
@@ -272,7 +290,8 @@
       display: none;
       align-items: center;
       justify-content: center;
-      z-index: 30;
+      z-index: 50;
+      padding: 12px;
     }
 
     #addModalMask.open,
@@ -288,6 +307,8 @@
       box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
       padding: 16px;
       color: #eaeaea;
+      max-height: 80vh;
+      overflow: auto;
     }
 
     .modal h3 {
@@ -400,6 +421,68 @@
     .fadeIn {
       animation: fadeInOpacity 0.6s ease forwards;
     }
+
+    /* 遮罩层 */
+    #dbPanelMask,
+    #addModalMask,
+    #viewModalMask {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+      padding: 12px;
+      overflow: hidden;
+    }
+
+    /* 打开时显示 */
+    #dbPanelMask.open,
+    #addModalMask.open,
+    #viewModalMask.open {
+      display: flex;
+      animation: fadeInMask 0.25s ease;
+    }
+
+    /* 弹窗滑入动画 */
+    @keyframes slideUpModal {
+      from {
+        transform: translateY(40px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    /* 遮罩淡入 */
+    @keyframes fadeInMask {
+      from {
+        background: rgba(0, 0, 0, 0);
+      }
+
+      to {
+        background: rgba(0, 0, 0, 0.45);
+      }
+    }
+
+    /* 弹窗本体 */
+    #dbPanel,
+    .modal {
+      animation: slideUpModal 0.28s ease;
+    }
+
+    /* 保证移动端不会溢出 */
+    #dbPanel,
+    .modal {
+      width: min(92vw, 560px);
+      max-height: min(80vh, 640px);
+      overflow: hidden;
+      border-radius: 12px;
+    }
   </style>
 </head>
 
@@ -409,15 +492,18 @@
   <div id="container">
     <button id="switchDbBtn" title="题库">数据库</button>
 
-    <div id="dbPanel" aria-hidden="true">
-      <div class="dbPanel-header">
-        <div class="dbPanel-title">题库组</div>
-        <div class="dbPanel-actions">
-          <button id="addGroupBtn" class="btn btn-primary">新增组</button>
-          <button id="closePanelBtn" class="btn">关闭</button>
+    <!-- 数据库弹窗（带遮罩，居中显示） -->
+    <div id="dbPanelMask" role="dialog" aria-modal="true" aria-labelledby="dbPanelTitle" aria-hidden="true">
+      <div id="dbPanel">
+        <div class="dbPanel-header">
+          <div class="dbPanel-title" id="dbPanelTitle">题库组</div>
+          <div class="dbPanel-actions">
+            <button id="addGroupBtn" class="btn btn-primary">新增组</button>
+            <button id="closePanelBtn" class="btn">关闭</button>
+          </div>
         </div>
+        <ul id="dbList" class="dbPanel-list"></ul>
       </div>
-      <ul id="dbList" class="dbPanel-list"></ul>
     </div>
 
     <div id="question">加载中…</div>
@@ -425,7 +511,7 @@
   </div>
 
   <!-- 新增组 Modal -->
-  <div id="addModalMask" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
+  <div id="addModalMask" role="dialog" aria-modal="true" aria-labelledby="addModalTitle" aria-hidden="true">
     <div class="modal">
       <h3 id="addModalTitle">新增题库组</h3>
       <div class="form-row">
@@ -445,7 +531,7 @@
   </div>
 
   <!-- 查看组 Modal -->
-  <div id="viewModalMask" role="dialog" aria-modal="true" aria-labelledby="viewModalTitle">
+  <div id="viewModalMask" role="dialog" aria-modal="true" aria-labelledby="viewModalTitle" aria-hidden="true">
     <div class="modal">
       <h3 id="viewModalTitle">题组</h3>
       <div class="questions-scroll">
@@ -513,7 +599,6 @@
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
 
-        // 你的 JSON 是分组对象结构：{ truth: { truth1: [...] }, dare: { ... } }
         localDB = {
           truth: (json && typeof json.truth === 'object' && !Array.isArray(json.truth)) ? json.truth : {},
           dare: (json && typeof json.dare === 'object' && !Array.isArray(json.dare)) ? json.dare : {},
@@ -602,6 +687,7 @@
     const drawBtn = document.getElementById('drawBtn');
     const switchDbBtn = document.getElementById('switchDbBtn');
 
+    const dbPanelMask = document.getElementById('dbPanelMask');
     const dbPanel = document.getElementById('dbPanel');
     const dbList = document.getElementById('dbList');
     const addGroupBtn = document.getElementById('addGroupBtn');
@@ -688,28 +774,28 @@
         const li = document.createElement('li');
         li.className = 'dbPanel-item';
         li.innerHTML = `
-        <span class="dbPanel-name" data-name="${name}" data-idx="${idx}" title="切换到此题组">
-          <span>${name}</span>
-          ${idx === currentDbIndex ? '<span class="badge">当前</span>' : ''}
-        </span>
-        <span class="row-actions">
-          <button class="btn btn-secondary btn-view" data-name="${name}">查看</button>
-          <button class="btn btn-danger btn-del" data-name="${name}">删除</button>
-        </span>
-      `;
+          <span class="dbPanel-name" data-name="${name}" data-idx="${idx}" title="切换到此题组">
+            <span>${name}</span>
+            ${idx === currentDbIndex ? '<span class="badge">当前</span>' : ''}
+          </span>
+          <span class="row-actions">
+            <button class="btn btn-secondary btn-view" data-name="${name}">查看</button>
+            <button class="btn btn-danger btn-del" data-name="${name}">删除</button>
+          </span>
+        `;
         dbList.appendChild(li);
       });
     }
 
     function toggleDbPanel(open) {
-      const willOpen = typeof open === 'boolean' ? open : !dbPanel.classList.contains('open');
+      const willOpen = typeof open === 'boolean' ? open : !dbPanelMask.classList.contains('open');
       if (willOpen) {
-        dbPanel.classList.add('open');
-        dbPanel.setAttribute('aria-hidden', 'false');
+        dbPanelMask.classList.add('open');
+        dbPanelMask.setAttribute('aria-hidden', 'false');
         renderDbList();
       } else {
-        dbPanel.classList.remove('open');
-        dbPanel.setAttribute('aria-hidden', 'true');
+        dbPanelMask.classList.remove('open');
+        dbPanelMask.setAttribute('aria-hidden', 'true');
       }
     }
 
@@ -869,13 +955,23 @@
       });
       viewQuestionsList.appendChild(frag);
       viewModalMask.classList.add('open');
+      viewModalMask.setAttribute('aria-hidden', 'false');
     }
-    function closeViewModal() { viewModalMask.classList.remove('open'); }
+    function closeViewModal() {
+      viewModalMask.classList.remove('open');
+      viewModalMask.setAttribute('aria-hidden', 'true');
+    }
 
     // 事件绑定
     drawBtn.addEventListener('click', draw);
-    switchDbBtn.addEventListener('click', () => toggleDbPanel());
-    closePanelBtn.addEventListener('click', () => toggleDbPanel(false));
+    switchDbBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleDbPanel();
+    });
+    closePanelBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleDbPanel(false);
+    });
 
     dbList.addEventListener('click', async (e) => {
       const delBtn = e.target.closest('.btn-del');
@@ -889,7 +985,7 @@
         return;
       }
       if (viewBtn) {
-        e.stopPropagation(); // 修复：阻止冒泡，避免 document 点击监听立刻把弹窗关掉
+        e.stopPropagation();
         const name = viewBtn.getAttribute('data-name');
         try {
           const items = await loadGroupQuestions(name);
@@ -904,7 +1000,7 @@
         return;
       }
       if (nameEl) {
-        e.stopPropagation(); // 切换组时也避免误触全局关闭
+        e.stopPropagation();
         const name = nameEl.getAttribute('data-name');
         const idx = databases.indexOf(name);
         if (idx >= 0 && idx !== currentDbIndex) {
@@ -917,9 +1013,11 @@
     });
 
     document.addEventListener('click', (e) => {
-      // 关闭面板
-      if (!dbPanel.contains(e.target) && e.target !== switchDbBtn) {
-        toggleDbPanel(false);
+      // 关闭数据库面板（点击遮罩关闭，点击内容不关闭）
+      if (dbPanelMask.classList.contains('open')) {
+        if (!dbPanel.contains(e.target) && e.target !== dbPanel && e.target !== switchDbBtn) {
+          toggleDbPanel(false);
+        }
       }
       // 查看组弹窗：点击遮罩关闭，点击内容不关闭
       if (viewModalMask.classList.contains('open')) {
@@ -929,7 +1027,10 @@
       // 新增组弹窗：点击遮罩关闭
       if (addModalMask.classList.contains('open')) {
         const modal = addModalMask.querySelector('.modal');
-        if (!modal.contains(e.target) && e.target !== modal) addModalMask.classList.remove('open');
+        if (!modal.contains(e.target) && e.target !== modal) {
+          addModalMask.classList.remove('open');
+          addModalMask.setAttribute('aria-hidden', 'true');
+        }
       }
     });
 
@@ -938,11 +1039,13 @@
       groupNameInput.value = '';
       questionsInput.value = '';
       addModalMask.classList.add('open');
+      addModalMask.setAttribute('aria-hidden', 'false');
       setTimeout(() => groupNameInput.focus(), 0);
     });
     cancelAddBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       addModalMask.classList.remove('open');
+      addModalMask.setAttribute('aria-hidden', 'true');
     });
     closeViewBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -968,6 +1071,7 @@
         await loadQuestions();
         renderDbList();
         addModalMask.classList.remove('open');
+        addModalMask.setAttribute('aria-hidden', 'true');
         toggleDbPanel(false);
         alert(isFirebaseMode ? '新增成功' : '已添加到内存（刷新后不保留，需修改 truth_or_dare.json 持久化）');
       } catch (e2) {
@@ -978,13 +1082,21 @@
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        if (viewModalMask.classList.contains('open')) closeViewModal();
-        else if (addModalMask.classList.contains('open')) addModalMask.classList.remove('open');
-        else toggleDbPanel(false);
+        // Esc 关闭所有弹窗
+        if (dbPanelMask.classList.contains('open')) {
+          toggleDbPanel(false);
+        }
+        if (viewModalMask.classList.contains('open')) {
+          closeViewModal();
+        }
+        if (addModalMask.classList.contains('open')) {
+          addModalMask.classList.remove('open');
+          addModalMask.setAttribute('aria-hidden', 'true');
+        }
       }
     });
 
-    // 启动
+    // 初始化
     loadDatabases();
   </script>
 </body>
