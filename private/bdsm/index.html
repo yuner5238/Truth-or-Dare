@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>真心话 or 大冒险</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: "微软雅黑", sans-serif;
+      overflow: hidden;
+      background: radial-gradient(circle at center, #2b2b2b, #000);
+    }
+
+    /* 加载动画遮罩（原样保留） */
+    #loader {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, #2b2b2b, #000);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      animation: fadeOut 2s ease forwards;
+      animation-delay: 2.2s;
+    }
+
+    .loader-ring {
+      width: 80px;
+      height: 80px;
+      border: 6px solid rgba(255,255,255,0.2);
+      border-top-color: #ff6f91;
+      border-radius: 50%;
+      animation: spin 1.2s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    .loader-text {
+      color: #fff;
+      font-size: 1.2rem;
+      animation: breathe 2s ease-in-out infinite;
+      text-shadow: 0 0 10px rgba(255,255,255,0.3);
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes breathe {
+      0%, 100% { opacity: 0.6; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.05); }
+    }
+    @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+
+    .container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #ff5fa2 50%, #6a11cb 50%);
+      animation: gradientShift 10s ease infinite alternate;
+    }
+
+    @keyframes gradientShift {
+      0% { background: linear-gradient(135deg, #ff5fa2 50%, #6a11cb 50%); }
+      100% { background: linear-gradient(135deg, #ff3d77 50%, #8e2de2 50%); }
+    }
+
+    .half {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      clip-path: polygon(0 0, 100% 0, 0 100%);
+      z-index: 1;
+    }
+
+    .truth {
+      background: linear-gradient(to bottom right, #ff5fa2, #ff3d77);
+    }
+
+    .dare {
+      background: linear-gradient(to top left, #6a11cb, #8e2de2);
+      clip-path: polygon(100% 0, 100% 100%, 0 100%);
+    }
+
+    .btn {
+      position: absolute;
+      padding: 1.2rem 2.4rem;
+      font-size: 1.3rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 40px;
+      color: white;
+      text-decoration: none;
+      cursor: pointer;
+      z-index: 2;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+      transition: transform 0.2s ease, box-shadow 0.3s ease;
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      animation: fadeInBtn 2.5s ease forwards;
+      animation-delay: 2.2s;
+    }
+
+    .btn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+
+    .btn-truth {
+      top: 40px;
+      left: 40px;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-dare {
+      bottom: 40px;
+      right: 40px;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-truth::after {
+      content: "💗 说出你的秘密";
+      display: block;
+      font-size: 0.9rem;
+      margin-top: 6px;
+      opacity: 0.8;
+    }
+
+    .btn-dare::after {
+      content: "😈 接受刺激挑战";
+      display: block;
+      font-size: 0.9rem;
+      margin-top: 6px;
+      opacity: 0.8;
+    }
+
+    /* —— 以下为“命运水晶球”按钮增强样式（在原 or-button 基础上增强） —— */
+    .or-button {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%); /* 原有漂浮动画依赖此 translate，请保留 */
+      z-index: 3;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      /* 晶体质感：内发光 + 外光晕 */
+      background: radial-gradient(120% 120% at 32% 28%, #ffffff, #e9e9f7 34%, #cfd2ff 54%, #a5abff 72%, #8a8fff 84%, #7a7fff 100%);
+      border: 2px solid rgba(255,255,255,0.85);
+      box-shadow:
+        0 0 42px rgba(170,180,255,0.55),
+        0 0 18px rgba(255,255,255,0.55),
+        inset 0 14px 28px rgba(255,255,255,0.35),
+        inset 0 -18px 36px rgba(60,60,120,0.25);
+      color: #1c1f33;
+      font-weight: 800;
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      cursor: pointer;
+      /* 原有入场与漂浮动画 */
+      animation: float 3s ease-in-out infinite, fadeInBtn 2.5s ease forwards;
+      animation-delay: 2.2s;
+      opacity: 0;
+      /* 交互动效 */
+      transition: transform .35s cubic-bezier(.2,.9,.2,1), box-shadow .35s, filter .35s;
+      backdrop-filter: blur(8px);
+    }
+    .or-button:hover {
+      transform: translate(-50%, -50%) scale(1.06);
+      box-shadow:
+        0 0 56px rgba(170,180,255,0.65),
+        0 0 24px rgba(255,255,255,0.6),
+        inset 0 16px 30px rgba(255,255,255,0.4),
+        inset 0 -18px 36px rgba(60,60,120,0.28);
+    }
+    .or-button:active { transform: translate(-50%, -50%) scale(0.96); }
+
+    /* 水晶球内部标签布局 */
+    .orb-core {
+      display:flex;
+      flex-direction: column;
+      align-items:center;
+      line-height: 1.1;
+      letter-spacing: .6px;
+      text-align:center;
+      text-shadow: 0 1px 10px rgba(255,255,255,0.5);
+      position: relative;
+    }
+    .orb-label { font-size: 0.98rem; }
+    .orb-sub {
+      margin-top: 4px;
+      font-size: 0.82rem;
+      opacity: .75;
+      letter-spacing: 1.2px;
+    }
+
+    /* 高光扫过 */
+    .or-button::after{
+      content:"";
+      position:absolute; inset:-10%;
+      background: conic-gradient(from 0deg, rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.18) 12%, rgba(255,255,255,0.0) 20%) ;
+      filter: blur(10px);
+      border-radius:50%;
+      transform: rotate(0deg);
+      animation: sweep 4s linear infinite;
+      pointer-events:none;
+    }
+    @keyframes sweep { to { transform: rotate(360deg) } }
+
+    /* 点击脉冲 + 微摇 */
+    .orb-pulse { animation: orbPulse .42s cubic-bezier(.2,.9,.2,1) }
+    @keyframes orbPulse {
+      0%   { transform: translate(-50%, -50%) scale(1) rotate(0deg) }
+      35%  { transform: translate(-50%, -50%) scale(1.14) rotate(1.2deg) }
+      100% { transform: translate(-50%, -50%) scale(1) rotate(0deg) }
+    }
+
+    /* 点击后：星芒闪光 */
+    .orb-flash {
+      position: fixed; inset:0; pointer-events:none; z-index: 1000;
+      background:
+        radial-gradient(120px 120px at var(--x,50%) var(--y,50%), rgba(255,255,255,0.65), rgba(255,255,255,0.0) 60%),
+        radial-gradient(300px 280px at 50% 50%, rgba(170,180,255,0.18), rgba(170,180,255,0.0) 70%);
+      opacity: 0;
+      animation: flashIn .42s ease forwards;
+    }
+    @keyframes flashIn {
+      0% { opacity: 0 }
+      40%{ opacity: 1 }
+      100%{ opacity: 0 }
+    }
+
+    /* 点击后：迷雾涌动帷幕 */
+    .mist {
+      position: fixed; inset:-10%; pointer-events:none; z-index: 1000;
+      opacity: 0;
+      background:
+        radial-gradient(220px 180px at 20% 30%, rgba(255,255,255,0.06), rgba(255,255,255,0) 60%),
+        radial-gradient(260px 220px at 80% 70%, rgba(255,255,255,0.05), rgba(255,255,255,0) 70%),
+        radial-gradient(320px 240px at 40% 80%, rgba(255,255,255,0.04), rgba(255,255,255,0) 70%),
+        radial-gradient(180px 160px at 70% 20%, rgba(255,255,255,0.035), rgba(255,255,255,0) 70%);
+      mix-blend-mode: screen;
+      filter: blur(18px) saturate(120%);
+      animation: mistRise .7s ease forwards, mistDrift 30s linear infinite;
+    }
+    @keyframes mistRise {
+      0% { opacity: 0; transform: scale(1.02) translateY(8px) }
+      100%{ opacity: .75; transform: scale(1) translateY(0) }
+    }
+    @keyframes mistDrift {
+      0% { transform: translate3d(0,0,0) }
+      50%{ transform: translate3d(-2%, 2%, 0) }
+      100%{ transform: translate3d(0,0,0) }
+    }
+
+    /* 咒语式渐变文字（短暂出现） */
+    .spellline {
+      position: fixed; left: 50%; top: calc(50% + 90px);
+      transform: translateX(-50%) translateY(0);
+      z-index: 1001;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-align:center;
+      font-size: 16px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #dbe4ff33, #f3e8ff33);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+      background-image: linear-gradient(90deg, #e7e7ff, #c9fdd7 45%, #ffd1dc 90%);
+      text-shadow: 0 2px 12px rgba(0,0,0,.35);
+      opacity: 0;
+      animation: spellIn .6s ease forwards;
+      white-space: nowrap;
+      pointer-events:none;
+    }
+    @keyframes spellIn {
+      0% { opacity: 0; transform: translateX(-50%) translateY(8px) scale(0.98) }
+      100%{ opacity: .96; transform: translateX(-50%) translateY(0) scale(1) }
+    }
+
+    @keyframes float {
+      0% { transform: translate(-50%, -50%) translateY(0); }
+      50% { transform: translate(-50%, -50%) translateY(-8px); }
+      100% { transform: translate(-50%, -50%) translateY(0); }
+    }
+
+    @keyframes fadeInBtn { to { opacity: 1; } }
+
+    @media (max-width: 600px) {
+      .btn {
+        font-size: 1rem;
+        padding: 1rem 1.8rem;
+      }
+      .or-button {
+        width: 90px; height: 90px; font-size: .98rem;
+      }
+      .spellline { font-size: 14px; top: calc(50% + 78px); }
+    }
+
+    /* 降低动效偏好时，关闭复杂动画 */
+    @media (prefers-reduced-motion: reduce) {
+      .or-button, .or-button::after { animation: none; }
+      .orb-pulse, .orb-flash, .mist, .spellline { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="loader">
+    <div class="loader-ring"></div>
+    <div class="loader-text">准备揭开秘密…</div>
+  </div>
+
+  <div class="container">
+    <div class="half truth"></div>
+    <div class="half dare"></div>
+
+    <a href="./play.html?mode=truth" class="btn btn-truth">真心话</a>
+    <a href="./play.html?mode=dare" class="btn btn-dare">大冒险</a>
+
+    <!-- 命运水晶球按钮：交给命运 + OR -->
+    <div class="or-button" role="button" aria-label="交给命运 OR" onclick="enterFateMode(event)">
+      <div class="orb-core">
+        <span class="orb-label">交给命运</span>
+        <span class="orb-sub">OR</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 命运仪式：震动 + 闪光 + 迷雾 + 咒语 + 清脆提示音 → 跳转 fate.html
+    function enterFateMode(e){
+      const orb = document.querySelector('.or-button');
+      // 脉冲动画（可重复触发）
+      orb.classList.remove('orb-pulse');
+      void orb.offsetWidth;
+      orb.classList.add('orb-pulse');
+
+      // 设备震动（可用则触发）
+      if (navigator.vibrate) navigator.vibrate([30, 80]);
+
+      // 点击位置用于星芒定位
+      const x = (e && e.clientX) || window.innerWidth/2;
+      const y = (e && e.clientY) || window.innerHeight/2;
+
+      // 星芒闪光
+      const flash = document.createElement('div');
+      flash.className = 'orb-flash';
+      flash.style.setProperty('--x', x + 'px');
+      flash.style.setProperty('--y', y + 'px');
+      document.body.appendChild(flash);
+
+      // 迷雾帷幕
+      const mist = document.createElement('div');
+      mist.className = 'mist';
+      document.body.appendChild(mist);
+
+      // 咒语渐变文字
+      const spell = document.createElement('div');
+      spell.className = 'spellline';
+      spell.textContent = '命运正在聆听你的愿望…';
+      document.body.appendChild(spell);
+
+      // 清脆提示音（Web Audio，无需外部文件）
+      playChime();
+
+      // 轻微延迟后跳转（给动画 ~650ms）
+      setTimeout(()=> {
+        window.location.href = './fate.html';
+      }, 650);
+
+      // 清理临时节点（防止残留）
+      setTimeout(()=> {
+        flash.remove();
+        mist.remove();
+        spell.remove();
+      }, 2000);
+    }
+
+    // 简单双音提示音：柔和钟声感
+    function playChime(){
+      try{
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = ctx.currentTime;
+
+        const notes = [
+          { f: 659.25, t: 0.0, d: 0.14, g: 0.35 }, // E5
+          { f: 880.00, t: 0.12, d: 0.18, g: 0.28 } // A5
+        ];
+
+        notes.forEach(n => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(n.f, now + n.t);
+          gain.gain.setValueAtTime(n.g, now + n.t);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + n.t + n.d);
+          osc.connect(gain).connect(ctx.destination);
+          osc.start(now + n.t);
+          osc.stop(now + n.t + n.d + 0.02);
+        });
+
+        // 轻微混响感（简单延迟）
+        const delay = ctx.createDelay(0.25);
+        delay.delayTime.value = 0.12;
+        const feedback = ctx.createGain();
+        feedback.gain.value = 0.25;
+        delay.connect(feedback).connect(delay);
+        // 不严格路由，仅做柔化：新开一个短音一起过 delay
+        const osc2 = ctx.createOscillator();
+        const g2 = ctx.createGain();
+        osc2.type = 'triangle';
+        osc2.frequency.value = 493.88; // B4
+        g2.gain.setValueAtTime(0.12, now);
+        g2.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+        osc2.connect(g2).connect(delay).connect(ctx.destination);
+        osc2.start(now + 0.04);
+        osc2.stop(now + 0.22);
+      }catch(err){
+        // 静默失败，不影响交互
+      }
+    }
+  </script>
+</body>
+</html>
